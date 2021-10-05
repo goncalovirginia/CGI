@@ -154,6 +154,7 @@ export function buildProgramFromSources(gl, vShaderSrc, fShaderSrc)
       }
       return shader;
   }
+  
   var vertexShader = getShader(gl, vShaderSrc, gl.VERTEX_SHADER),
       fragmentShader = getShader(gl, fShaderSrc, gl.FRAGMENT_SHADER),
       program = gl.createProgram();
