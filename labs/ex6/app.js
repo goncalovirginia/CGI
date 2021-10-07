@@ -9,6 +9,8 @@ import { vec2, flatten } from "../../libs/MV.js";
 /** @type {WebGLRenderingContext} */
 var gl;
 var program;
+var numTriangles = 10000;
+var size = 0.01;
 
 function setup(shaders) {
   // Setup
@@ -21,7 +23,13 @@ function setup(shaders) {
     shaders["shader.frag"]
   );
 
-  const vertices = [vec2(-0.5, -0.5), vec2(0.5, -0.5), vec2(0, 0.5)];
+  let vertices = [];
+
+  for (let i = 0; i < numTriangles; i++) {
+    let x = (Math.random() * 2) - 1;
+    let y = (Math.random() * 2) - 1;
+    vertices = vertices.concat([vec2(x, y), vec2(x + size, y + size), vec2(x + size, y - size)]);
+  }
 
   const aBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, aBuffer);
@@ -48,7 +56,7 @@ function animate() {
   gl.clear(gl.COLOR_BUFFER_BIT);
 
   gl.useProgram(program);
-  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  gl.drawArrays(gl.TRIANGLES, 0, numTriangles * 3);
 }
 
 loadShadersFromURLS(["shader.vert", "shader.frag"]).then((shaders) =>
