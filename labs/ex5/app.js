@@ -8,7 +8,7 @@ import { vec2, flatten } from "../../libs/MV.js";
 
 /** @type {WebGLRenderingContext} */
 var gl;
-var program;
+var program, program2;
 
 function setup(shaders) {
   // Setup
@@ -20,6 +20,12 @@ function setup(shaders) {
     shaders["shader.vert"],
     shaders["shader.frag"]
   );
+
+    program2 = buildProgramFromSources(
+      gl,
+      shaders["shader.vert"],
+      shaders["shader2.frag"]
+    );
 
   const vertices = [vec2(-0.5, -0.5), vec2(0.5, -0.5), vec2(0, 0.5)];
 
@@ -49,8 +55,11 @@ function animate() {
 
   gl.useProgram(program);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+  gl.useProgram(program2);
+  gl.drawArrays(gl.LINE_LOOP, 0, 3);
 }
 
-loadShadersFromURLS(["shader.vert", "shader.frag"]).then((shaders) =>
+loadShadersFromURLS(["shader.vert", "shader.frag", "shader2.frag"]).then((shaders) =>
   setup(shaders)
 );
