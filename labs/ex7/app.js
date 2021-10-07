@@ -9,6 +9,7 @@ import { vec2, flatten } from "../../libs/MV.js";
 /** @type {WebGLRenderingContext} */
 var gl;
 var program;
+var uniformLocation;
 
 function setup(shaders) {
   // Setup
@@ -20,6 +21,8 @@ function setup(shaders) {
     shaders["shader.vert"],
     shaders["shader.frag"]
   );
+
+  uniformLocation = gl.getUniformLocation(program, "color");
 
   const vertices = [vec2(-0.5, -0.5), vec2(0.5, -0.5), vec2(0, 0.5)];
 
@@ -48,7 +51,10 @@ function animate() {
   gl.clear(gl.COLOR_BUFFER_BIT);
 
   gl.useProgram(program);
+  gl.uniform4fv(uniformLocation, [1.0, 0.0, 0.0, 1.0]);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
+  gl.uniform4fv(uniformLocation, [1.0, 1.0, 1.0, 1.0]);
+  gl.drawArrays(gl.LINE_LOOP, 0, 3);
 }
 
 loadShadersFromURLS(["shader.vert", "shader.frag"]).then((shaders) =>
