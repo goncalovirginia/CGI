@@ -22,6 +22,7 @@ function setup(shaders) {
   );
 
   const vertices = [vec2(-0.5, -0.5), vec2(0.5, -0.5), vec2(0, 0.5)];
+  const colors = [vec4(1, 0, 0, 1), vec4(0, 1, 0, 1), vec4(0, 0 , 1, 1)];
 
   const aBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, aBuffer);
