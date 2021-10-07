@@ -9,6 +9,9 @@ import { vec2, flatten } from "../../libs/MV.js";
 /** @type {WebGLRenderingContext} */
 var gl;
 var program;
+var dx;
+var pos = 0.0;
+var speed = 0.01;
 
 function setup(shaders) {
   // Setup
@@ -20,6 +23,8 @@ function setup(shaders) {
     shaders["shader.vert"],
     shaders["shader.frag"]
   );
+
+  dx = gl.getUniformLocation(program, "dx");
 
   const vertices = [vec2(-0.5, -0.5), vec2(0.5, -0.5), vec2(0, 0.5)];
 
@@ -43,6 +48,14 @@ function setup(shaders) {
 
 function animate() {
   window.requestAnimationFrame(animate);
+
+  if (pos <= -0.5 || pos >= 0.5) {
+    speed = -speed;
+  }
+
+  pos += speed;
+
+  gl.uniform1f(dx, pos);
 
   // Drawing code
   gl.clear(gl.COLOR_BUFFER_BIT);
