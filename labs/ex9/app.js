@@ -24,17 +24,17 @@ function setup(shaders) {
   const vertices = [vec2(-0.5, -0.5), vec2(0.5, -0.5), vec2(0.0, 0.5)];
   const colors = [vec4(1.0, 0.0, 0.0, 1.0), vec4(0.0, 1.0, 0.0, 1.0), vec4(0.0, 0.0, 1.0, 1.0)];
 
-  const aBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, aBuffer);
+  const vBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, flatten(vertices), gl.STATIC_DRAW);
-
-  const cBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, cBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, flatten(colors), gl.STATIC_DRAW);
 
   const vPosition = gl.getAttribLocation(program, "vPosition");
   gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(vPosition);
+
+  const cBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, cBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, flatten(colors), gl.STATIC_DRAW);
 
   const vColor = gl.getAttribLocation(program, "vColor");
   gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
