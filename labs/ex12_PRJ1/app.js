@@ -19,9 +19,9 @@ let pointColorUniform;
 UTILS.loadShadersFromURLS(["shader1.vert", "shader1.frag"]).then(s => setup(s));
 
 function setup(shaders) {
+	gl = UTILS.setupWebGL(canvas);
+	
 	resizeCanvas();
-
-    gl = UTILS.setupWebGL(canvas);
 
     program = UTILS.buildProgramFromSources(
 		gl,
@@ -47,7 +47,6 @@ function setup(shaders) {
   	gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
   	gl.enableVertexAttribArray(vPosition);
 
-	gl.viewport(0, 0, canvas.width, canvas.height);
 	gl.clearColor(0.0, 0.0, 0.0, 1.0);
 
 	window.requestAnimationFrame(animate);
@@ -72,6 +71,7 @@ function resizeCanvas() {
 	canvas.width = window.innerWidth;
   	canvas.height = window.innerHeight;
 	tableHeight = (tableWidth * canvas.height) / canvas.width;
+	gl.viewport(0, 0, canvas.width, canvas.height);
 }
 
 window.addEventListener("resize", resizeCanvas);
