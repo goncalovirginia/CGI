@@ -86,8 +86,8 @@ canvas.addEventListener("click", function(event) {
 	const xTable = ((x - canvasCenterX)/canvasCenterX) * (tableWidth/2);
 	const yTable = ((canvasCenterY - y)/canvasCenterY) * (tableHeight/2);
     
-    console.log("Click at: (" + x + ", " + y + ")");
-	console.log("Table: (" + xTable + ", " + yTable + ")");
+    console.log("Window Coordinates: (" + x + ", " + y + ")");
+	console.log("Table Coordinates: (" + xTable + ", " + yTable + ")");
 
 	gl.bufferSubData(gl.ARRAY_BUFFER, (grid.length + numPoints) * MV.sizeof['vec2'], MV.flatten(MV.vec2(xTable, yTable)));
 	numPoints++;
