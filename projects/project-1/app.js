@@ -16,6 +16,8 @@ let numPoints = 0;
 const MAX_POINTS = 1000;
 let pointColorUniform;
 
+let pointColor;
+
 UTILS.loadShadersFromURLS(["shader1.vert", "shader1.frag"]).then(s => setup(s));
 
 function setup(shaders) {
@@ -63,7 +65,7 @@ function animate(time) {
 	gl.uniform1f(gl.getUniformLocation(program, "tableHeight"), tableHeight);
 	gl.uniform4fv(pointColorUniform, MV.vec4(1.0, 1.0, 1.0, 1.0));
   	gl.drawArrays(gl.POINTS, 0, grid.length);
-	gl.uniform4fv(pointColorUniform, MV.vec4(1.0, 0.0, 0.0, 1.0));
+	gl.uniform4fv(pointColorUniform, pointColor);
 	gl.drawArrays(gl.POINTS, grid.length, numPoints);
 }
 
@@ -91,4 +93,6 @@ canvas.addEventListener("click", function(event) {
 
 	gl.bufferSubData(gl.ARRAY_BUFFER, (grid.length + numPoints) * MV.sizeof['vec2'], MV.flatten(MV.vec2(xTable, yTable)));
 	numPoints++;
+
+	event.shiftKey ? pointColor = MV.vec4(0, 1, 0, 1) : pointColor = MV.vec4(1, 0, 0, 1);
 });
