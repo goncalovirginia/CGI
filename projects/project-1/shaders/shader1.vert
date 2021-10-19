@@ -1,3 +1,5 @@
+precision highp float;
+
 attribute vec4 vPosition;
 
 uniform float tableWidth;
@@ -31,5 +33,5 @@ vec4 colorize(vec2 f) {
 
 void main() {
     gl_Position = vPosition / vec4(tableWidth/2.0, tableHeight/2.0, 1.0, 1.0);
-    gl_PointSize = 4.0;
+    gl_PointSize = 1.0;
 }
