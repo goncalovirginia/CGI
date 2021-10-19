@@ -85,9 +85,9 @@ function resizeCanvas() {
 
 function createGrid() {
 	for (let x = - tableWidth / 2; x <= tableWidth/2; x += GRID_SPACING) {
-    	for (let y = - tableHeight / 2; y <= tableHeight/2; y += GRID_SPACING) {
-        	grid.push(MV.vec2(x, y));
-    	}
+		for (let y = - tableHeight / 2; y <= tableHeight/2; y += GRID_SPACING) {
+			grid.push(MV.vec2(x, y));
+		}
 	}
 }
 
@@ -99,10 +99,10 @@ function updateCharges() {
 		let s = Math.sin(chargeValue * ANGULAR_VELOCITY);
     	let c = Math.cos(chargeValue * ANGULAR_VELOCITY);
 
-    	let newX = -s * charge.y + c * charge.x;
-    	let newY = s * charge.x + c * charge.y;
+    	let newX = -s * charge[1] + c * charge[0];
+    	let newY = s * charge[0] + c * charge[1];
 
-		//charges[i] = MV.vec2(newX, newY);
+		charges[i] = MV.vec2(newX, newY);
 
     	gl.uniform2fv(gl.getUniformLocation(gridProgram, "chargePositions[" + i + "]"), MV.flatten(charges[i]));
 	}
