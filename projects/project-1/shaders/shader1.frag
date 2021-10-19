@@ -2,6 +2,8 @@ precision highp float;
 
 uniform vec4 color;
 
+#define TWOPI 6.28318530718
+
 /* 
 Converts an angle to hue and returns the RGB values corresponding to angle mod TWOPI:
 0=red, PI/2=yellow-green, PI=cyan, -PI/2=purple
