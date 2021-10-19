@@ -53,7 +53,7 @@ function setup(shaders) {
   	gl.enableVertexAttribArray(vPositionGrid);
 	/*
 	const vPositionCharges = gl.getAttribLocation(chargesProgram, "vPosition");
-  	gl.vertexAttribPointer(vPositionCharges, 2, gl.FLOAT, false, 0, grid.length * MV.sizeof['vec2']);
+  	gl.vertexAttribPointer(vPositionCharges, 2, gl.FLOAT, false, 0, grid.length);
   	gl.enableVertexAttribArray(vPositionCharges);
 	*/
 	/*
