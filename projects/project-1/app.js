@@ -19,7 +19,7 @@ const MAX_CHARGES = 100;
 
 const ANGULAR_VELOCITY = 0.01;
 
-const NOISE_DISTANCE = 0.01;
+const NOISE_DISTANCE = GRID_SPACING / 5;
 
 let drawCharges = true;
 
