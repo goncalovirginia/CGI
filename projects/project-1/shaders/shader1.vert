@@ -55,7 +55,7 @@ void main() {
             vec *= MAX_VECTOR_LENGTH / len;
         }
 
-        gl_Position = (vPosition + vec4(vec.x, vec.y, 0.0, 0.0)) / vec4(tableWidth/2.0, tableHeight/2.0, 1.0, 1.0);
+        gl_Position = (vPosition + vec4(vec.x, vec.y, -1.0, 0.0)) / vec4(tableWidth/2.0, tableHeight/2.0, 1.0, 1.0);
         fColor = colorize(vec);
     }
     else {
