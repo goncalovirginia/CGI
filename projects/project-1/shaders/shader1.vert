@@ -9,7 +9,22 @@ const int MAX_CHARGES = 100;
 uniform vec2 chargePositions[MAX_CHARGES];
 uniform float chargeValues[MAX_CHARGES];
 
+varying vec4 fColor;
+
 #define TWOPI 6.28318530718
+#define KE 8.9875517923 * pow(10.0, 9.0)
+#define MAX_VECTOR_LENGTH 0.25
+
+vec2 calculateVector() {
+    vec2 vec = vec2(0.0, 0.0);
+    vec2 point = vec2(vPosition.x, vPosition.y);
+
+    for (int i = 0; i < MAX_CHARGES; i++) {
+        vec += KE * chargeValues[i] * distance(chargePositions[i], point) * (chargePositions[i] - point);
+    }
+
+    return vec;
+}
 
 /* 
 Converts an angle to hue and returns the RGB values corresponding to angle mod TWOPI:
@@ -32,6 +47,14 @@ vec4 colorize(vec2 f) {
 }
 
 void main() {
-    gl_Position = vPosition / vec4(tableWidth/2.0, tableHeight/2.0, 1.0, 1.0);
-    gl_PointSize = 1.0;
+    vec2 vec = calculateVector();
+    float len = length(vec);
+
+    if (len > MAX_VECTOR_LENGTH) {
+        vec *= MAX_VECTOR_LENGTH/len;
+    }
+
+    gl_Position = (vPosition + vec4(vec.x, vec.y, 0.0, 0.0)) / vec4(tableWidth/2.0, tableHeight/2.0, 1.0, 1.0);
+    gl_PointSize = 2.0;
+    fColor = colorize(vec);
 }

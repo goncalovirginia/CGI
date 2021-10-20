@@ -19,7 +19,11 @@ const MAX_CHARGES = 100;
 
 const ANGULAR_VELOCITY = 0.01;
 
-UTILS.loadShadersFromURLS(["shader1.vert", "shader2.vert", "shader1.frag"]).then(s => setup(s));
+const NOISE_DISTANCE = 0.01;
+
+let drawCharges = true;
+
+UTILS.loadShadersFromURLS(["shader1.vert", "shader2.vert", "shader1.frag", "shader2.frag"]).then(s => setup(s));
 
 function setup(shaders) {
 	gl = UTILS.setupWebGL(canvas);
@@ -35,7 +39,7 @@ function setup(shaders) {
 	chargesProgram = UTILS.buildProgramFromSources(
 		gl,
 		shaders["shader2.vert"],
-		shaders["shader1.frag"]
+		shaders["shader2.frag"]
 	);
 	
 	createGrid();
@@ -65,7 +69,6 @@ function animate(time) {
 
 	gl.uniform1f(gl.getUniformLocation(gridProgram, "tableWidth"), tableWidth);
 	gl.uniform1f(gl.getUniformLocation(gridProgram, "tableHeight"), tableHeight);
-	gl.uniform4fv(gl.getUniformLocation(gridProgram, "color"), MV.vec4(1.0, 1.0, 1.0, 1.0));
   	gl.drawArrays(gl.POINTS, 0, grid.length);
 
 	gl.useProgram(chargesProgram);
@@ -73,7 +76,10 @@ function animate(time) {
 	gl.uniform1f(gl.getUniformLocation(chargesProgram, "tableWidth"), tableWidth);
 	gl.uniform1f(gl.getUniformLocation(chargesProgram, "tableHeight"), tableHeight);
 	gl.uniform4fv(gl.getUniformLocation(chargesProgram, "color"), MV.vec4(1.0, 0.0, 0.0, 1.0));
-	gl.drawArrays(gl.POINTS, grid.length, charges.length);
+	
+	if (drawCharges) {
+		gl.drawArrays(gl.POINTS, grid.length, charges.length);
+	}
 }
 
 function resizeCanvas() {
@@ -86,7 +92,9 @@ function resizeCanvas() {
 function createGrid() {
 	for (let x = - tableWidth / 2; x <= tableWidth/2; x += GRID_SPACING) {
 		for (let y = - tableHeight / 2; y <= tableHeight/2; y += GRID_SPACING) {
-			grid.push(MV.vec2(x, y));
+			let newPoint = MV.vec2(x + (Math.random() * 2 -1) * NOISE_DISTANCE, y + (Math.random() * 2 -1) * NOISE_DISTANCE);
+			grid.push(newPoint);
+			grid.push(newPoint);
 		}
 	}
 }
@@ -104,6 +112,7 @@ function updateCharges() {
 
 		charges[i] = MV.vec2(newX, newY);
 
+		gl.useProgram(gridProgram);
     	gl.uniform2fv(gl.getUniformLocation(gridProgram, "chargePositions[" + i + "]"), MV.flatten(charges[i]));
 	}
 
@@ -129,6 +138,13 @@ canvas.addEventListener("click", function(event) {
 		charges.push(MV.vec2(xTable, yTable));
 		event.shiftKey ? chargeValues.push(-1.0) : chargeValues.push(1.0);
 
+		gl.useProgram(gridProgram);
 		gl.uniform1f(gl.getUniformLocation(gridProgram, "chargeValues[" + (chargeValues.length - 1) + "]"), chargeValues[chargeValues.length-1]);
 	}
+});
+
+window.addEventListener("keydown", function (event) {
+    if(event.key == " "){
+        drawCharges = !drawCharges;
+    }
 });
