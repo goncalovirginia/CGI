@@ -90,9 +90,9 @@ function resizeCanvas() {
 }
 
 function generateGrid() {
-	for (let x = - tableWidth / 2; x <= tableWidth/2; x += GRID_SPACING) {
-		for (let y = - tableHeight / 2; y <= tableHeight/2; y += GRID_SPACING) {
-			let newPoint = MV.vec2(x + (Math.random() * 2 -1) * NOISE_DISTANCE, y + (Math.random() * 2 -1) * NOISE_DISTANCE);
+	for (let x = - tableWidth / 2; x <= tableWidth / 2; x += GRID_SPACING) {
+		for (let y = - tableHeight / 2; y <= tableHeight / 2; y += GRID_SPACING) {
+			let newPoint = MV.vec2(x + (Math.random() * 2 - 1) * NOISE_DISTANCE, y + (Math.random() * 2 - 1) * NOISE_DISTANCE);
 			grid.push(MV.vec3(newPoint[0], newPoint[1], 0.0));
 			grid.push(MV.vec3(newPoint[0], newPoint[1], 1.0));
 		}
