@@ -46,10 +46,10 @@ function setup(shaders) {
 
 	const buffer = gl.createBuffer();
 	gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-	gl.bufferData(gl.ARRAY_BUFFER, (grid.length + MAX_CHARGES) * MV.sizeof['vec2'], gl.STATIC_DRAW);
+	gl.bufferData(gl.ARRAY_BUFFER, (grid.length + MAX_CHARGES) * MV.sizeof['vec3'], gl.STATIC_DRAW);
 
   	const vPosition = gl.getAttribLocation(gridProgram, "vPosition");
-  	gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
+  	gl.vertexAttribPointer(vPosition, 3, gl.FLOAT, false, 0, 0);
   	gl.enableVertexAttribArray(vPosition);
 
 	gl.bufferSubData(gl.ARRAY_BUFFER, 0, MV.flatten(grid));
@@ -69,7 +69,7 @@ function animate(time) {
 
 	gl.uniform1f(gl.getUniformLocation(gridProgram, "tableWidth"), tableWidth);
 	gl.uniform1f(gl.getUniformLocation(gridProgram, "tableHeight"), tableHeight);
-  	gl.drawArrays(gl.POINTS, 0, grid.length);
+  	gl.drawArrays(gl.LINES, 0, grid.length);
 
 	gl.useProgram(chargesProgram);
 
@@ -93,13 +93,15 @@ function createGrid() {
 	for (let x = - tableWidth / 2; x <= tableWidth/2; x += GRID_SPACING) {
 		for (let y = - tableHeight / 2; y <= tableHeight/2; y += GRID_SPACING) {
 			let newPoint = MV.vec2(x + (Math.random() * 2 -1) * NOISE_DISTANCE, y + (Math.random() * 2 -1) * NOISE_DISTANCE);
-			grid.push(newPoint);
-			grid.push(newPoint);
+			grid.push(MV.vec3(newPoint[0], newPoint[1], 0.0));
+			grid.push(MV.vec3(newPoint[0], newPoint[1], 1.0));
 		}
 	}
 }
 
 function updateCharges() {
+	gl.useProgram(gridProgram);
+
 	for (let i = 0; i < charges.length; i++) {
 		let charge = charges[i];
 		let chargeValue = chargeValues[i];
@@ -110,13 +112,12 @@ function updateCharges() {
     	let newX = -s * charge[1] + c * charge[0];
     	let newY = s * charge[0] + c * charge[1];
 
-		charges[i] = MV.vec2(newX, newY);
+		charges[i] = MV.vec3(newX, newY, 0.0);
 
-		gl.useProgram(gridProgram);
-    	gl.uniform2fv(gl.getUniformLocation(gridProgram, "chargePositions[" + i + "]"), MV.flatten(charges[i]));
+    	gl.uniform3fv(gl.getUniformLocation(gridProgram, "chargePositions[" + i + "]"), MV.flatten(charges[i]));
 	}
 
-	gl.bufferSubData(gl.ARRAY_BUFFER, grid.length * MV.sizeof['vec2'], MV.flatten(charges));
+	gl.bufferSubData(gl.ARRAY_BUFFER, grid.length * MV.sizeof['vec3'], MV.flatten(charges));
 }
 
 window.addEventListener("resize", resizeCanvas);
@@ -144,7 +145,7 @@ canvas.addEventListener("click", function(event) {
 });
 
 window.addEventListener("keydown", function (event) {
-    if(event.key == " "){
+    if (event.key == " "){
         drawCharges = !drawCharges;
     }
 });
