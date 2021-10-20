@@ -75,7 +75,7 @@ function animate(time) {
 
 	gl.uniform1f(gl.getUniformLocation(chargesProgram, "tableWidth"), tableWidth);
 	gl.uniform1f(gl.getUniformLocation(chargesProgram, "tableHeight"), tableHeight);
-	gl.uniform4fv(gl.getUniformLocation(chargesProgram, "color"), MV.vec4(1.0, 0.0, 0.0, 1.0));
+	gl.uniform4fv(gl.getUniformLocation(chargesProgram, "color"), MV.vec4(1.0, 1.0, 1.0, 1.0));
 	
 	if (drawCharges) {
 		gl.drawArrays(gl.POINTS, grid.length, charges.length);
