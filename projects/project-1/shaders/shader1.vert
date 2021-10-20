@@ -14,16 +14,19 @@ varying vec4 fColor;
 #define TWOPI 6.28318530718
 #define KE 8.9875517923 * pow(10.0, 9.0)
 #define MAX_VECTOR_LENGTH 0.25
+#define VECTOR_NORMALIZATION pow(10.0, 11.0)
 
 vec3 calculateVector() {
     vec3 vec = vec3(0.0, 0.0, 0.0);
-    vec3 point = vec3(vPosition.x, vPosition.y, 0.0);
+    vec3 gridPoint = vec3(vPosition.x, vPosition.y, 0.0);
 
     for (int i = 0; i < MAX_CHARGES; i++) {
-        vec += KE * chargeValues[i] * distance(chargePositions[i], point) * (chargePositions[i] - point);
+        float dist = distance(chargePositions[i], gridPoint);
+        float e = KE * chargeValues[i] / pow(dist, 2.0);
+        vec += e * (chargePositions[i] - gridPoint) / dist;
     }
 
-    return vec;
+    return vec / VECTOR_NORMALIZATION;
 }
 
 /* 
