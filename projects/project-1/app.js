@@ -42,7 +42,7 @@ function setup(shaders) {
 		shaders["shader2.frag"]
 	);
 	
-	createGrid();
+	generateGrid();
 
 	const buffer = gl.createBuffer();
 	gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
@@ -89,7 +89,7 @@ function resizeCanvas() {
 	gl.viewport(0, 0, canvas.width, canvas.height);
 }
 
-function createGrid() {
+function generateGrid() {
 	for (let x = - tableWidth / 2; x <= tableWidth/2; x += GRID_SPACING) {
 		for (let y = - tableHeight / 2; y <= tableHeight/2; y += GRID_SPACING) {
 			let newPoint = MV.vec2(x + (Math.random() * 2 -1) * NOISE_DISTANCE, y + (Math.random() * 2 -1) * NOISE_DISTANCE);
