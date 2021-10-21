@@ -22,7 +22,7 @@ vec3 calculateVector() {
 
     for (int i = 0; i < MAX_CHARGES; i++) {
         float dist = distance(chargePositions[i], gridPoint);
-        float e = KE * chargeValues[i] / pow(dist, 2.0);
+        float e = KE * (-chargeValues[i]) / pow(dist, 2.0);
         vec += e * (chargePositions[i] - gridPoint) / dist;
     }
 
