@@ -1,12 +1,13 @@
 precision highp float;
 
 attribute vec4 vPosition;
+attribute float vType;
 
 uniform float tableWidth;
 uniform float tableHeight;
 
 const int MAX_CHARGES = 100;
-uniform vec3 chargePositions[MAX_CHARGES];
+uniform vec2 chargePositions[MAX_CHARGES];
 uniform float chargeValues[MAX_CHARGES];
 
 varying vec4 fColor;
@@ -16,9 +17,9 @@ varying vec4 fColor;
 #define MAX_VECTOR_LENGTH 0.25
 #define VECTOR_NORMALIZATION pow(10.0, 11.0)
 
-vec3 calculateVector() {
-    vec3 vec = vec3(0.0, 0.0, 0.0);
-    vec3 gridPoint = vec3(vPosition.x, vPosition.y, 0.0);
+vec2 calculateVector() {
+    vec2 vec = vec2(0.0, 0.0);
+    vec2 gridPoint = vec2(vPosition.x, vPosition.y);
 
     for (int i = 0; i < MAX_CHARGES; i++) {
         float dist = distance(chargePositions[i], gridPoint);
@@ -44,21 +45,21 @@ vec3 hsv2rgb(vec3 c) {
     return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
 }
 
-vec4 colorize(vec3 f) {
+vec4 colorize(vec2 f) {
     float a = atan(f.y, f.x);
     return vec4(angle_to_hue(a-TWOPI), 1.);
 }
 
 void main() {
-    if (vPosition.z == 1.0) {
-        vec3 vec = calculateVector();
+    if (vType == 1.0) {
+        vec2 vec = calculateVector();
         float len = length(vec);
 
         if (len > MAX_VECTOR_LENGTH) {
             vec *= MAX_VECTOR_LENGTH / len;
         }
 
-        gl_Position = (vPosition + vec4(vec.x, vec.y, -1.0, 0.0)) / vec4(tableWidth/2.0, tableHeight/2.0, 1.0, 1.0);
+        gl_Position = (vPosition + vec4(vec.x, vec.y, 0.0, 0.0)) / vec4(tableWidth/2.0, tableHeight/2.0, 1.0, 1.0);
         fColor = colorize(vec);
     }
     else {
