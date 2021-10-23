@@ -10,11 +10,12 @@ const int MAX_CHARGES = 100;
 uniform vec2 chargePositions[MAX_CHARGES];
 uniform float chargeValues[MAX_CHARGES];
 
+uniform float MAX_VECTOR_LENGTH;
+
 varying vec4 fColor;
 
 #define TWOPI 6.28318530718
 #define KE 8.9875517923 * pow(10.0, 9.0)
-#define MAX_VECTOR_LENGTH 0.25
 #define VECTOR_NORMALIZATION pow(10.0, 11.0)
 
 vec2 calculateVector() {

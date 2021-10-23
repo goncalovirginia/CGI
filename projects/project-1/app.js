@@ -17,7 +17,7 @@ let charges = [];
 let chargeValues = [];
 const MAX_CHARGES = 100;
 
-const ANGULAR_VELOCITY = 0.03;
+const ANGULAR_VELOCITY = 0.01;
 
 const NOISE_DISTANCE = GRID_SPACING / 5;
 
@@ -68,6 +68,9 @@ function setup(shaders) {
 
 	gl.clearColor(0.0, 0.0, 0.0, 1.0);
 
+	gl.useProgram(gridProgram);
+	gl.uniform1f(gl.getUniformLocation(gridProgram, "MAX_VECTOR_LENGTH"), GRID_SPACING * 5);
+	
 	window.requestAnimationFrame(animate);
 }
 
