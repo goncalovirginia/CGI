@@ -103,6 +103,8 @@ function animate(time) {
 
 	// Charges
 
+	gl.bindBuffer(gl.ARRAY_BUFFER, cBuffer);
+
 	gl.bufferSubData(gl.ARRAY_BUFFER, 0, MV.flatten(charges));
 	gl.bufferSubData(gl.ARRAY_BUFFER, cPositionBuffSize, MV.flatten(chargeValues));
 
