@@ -23,6 +23,11 @@ const NOISE_DISTANCE = GRID_SPACING / 5;
 
 let drawCharges = true;
 
+let vPositionBuffSize;
+let vTypeBuffSize;
+const cPositionBuffSize = MAX_CHARGES * MV.sizeof['vec2'];
+const cTypeBuffSize = cPositionBuffSize / 2;
+
 UTILS.loadShadersFromURLS(["shader1.vert", "shader2.vert", "shader1.frag", "shader2.frag"]).then(s => setup(s));
 
 function setup(shaders) {
@@ -44,31 +49,24 @@ function setup(shaders) {
 	
 	generateGrid();
 
-	const buffer = gl.createBuffer();
-	gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-	gl.bufferData(gl.ARRAY_BUFFER, (grid.length + grid.length / 2 + MAX_CHARGES) * MV.sizeof['vec2'], gl.STATIC_DRAW);
-
-  	const vPosition = gl.getAttribLocation(gridProgram, "vPosition");
-  	gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
-  	gl.enableVertexAttribArray(vPosition);
-
-	const vType = gl.getAttribLocation(gridProgram, "vType");
-  	gl.vertexAttribPointer(vType, 1, gl.FLOAT, false, 0, grid.length * MV.sizeof['vec2']);
-  	gl.enableVertexAttribArray(vType);
-
-	const cPosition = gl.getAttribLocation(chargesProgram, "vPosition");
-  	gl.vertexAttribPointer(cPosition, 2, gl.FLOAT, false, 0, 0);
-  	gl.enableVertexAttribArray(cPosition);
+	const gBuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, gBuffer);
+	gl.bufferData(gl.ARRAY_BUFFER, vPositionBuffSize + vTypeBuffSize, gl.STATIC_DRAW);
 
 	gl.bufferSubData(gl.ARRAY_BUFFER, 0, MV.flatten(grid));
 
 	for (let i = 0; i < grid.length/2; i++) {
-		gl.bufferSubData(gl.ARRAY_BUFFER, (grid.length + i) * MV.sizeof['vec2'], MV.flatten(MV.vec2(0.0, 1.0)));
+		gl.bufferSubData(gl.ARRAY_BUFFER, vPositionBuffSize + i * MV.sizeof['vec2'], MV.flatten(MV.vec2(0.0, 1.0)));
 	}
+
+	const cBuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, cBuffer);
+	gl.bufferData(gl.ARRAY_BUFFER, cPositionBuffSize + cTypeBuffSize, gl.STATIC_DRAW);
 
 	gl.clearColor(0.0, 0.0, 0.0, 1.0);
 
 	gl.useProgram(gridProgram);
+
 	gl.uniform1f(gl.getUniformLocation(gridProgram, "MAX_VECTOR_LENGTH"), GRID_SPACING * 5);
 	
 	window.requestAnimationFrame(animate);
@@ -76,24 +74,48 @@ function setup(shaders) {
 
 function animate(time) {
 	window.requestAnimationFrame(animate);
+
 	gl.clear(gl.COLOR_BUFFER_BIT);
 
-	updateCharges();
+	// Grid
+
+	const vPosition = gl.getAttribLocation(gridProgram, "vPosition");
+  	gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
+  	gl.enableVertexAttribArray(vPosition);
+
+	const vType = gl.getAttribLocation(gridProgram, "vType");
+  	gl.vertexAttribPointer(vType, 1, gl.FLOAT, false, 0, vPositionBuffSize);
+  	gl.enableVertexAttribArray(vType);
 
 	gl.useProgram(gridProgram);
 
+	updateCharges();
+
 	gl.uniform1f(gl.getUniformLocation(gridProgram, "tableWidth"), tableWidth);
 	gl.uniform1f(gl.getUniformLocation(gridProgram, "tableHeight"), tableHeight);
+
   	gl.drawArrays(gl.LINES, 0, grid.length);
+
+	// Charges
+
+	gl.bufferSubData(gl.ARRAY_BUFFER, 0, MV.flatten(charges));
+	gl.bufferSubData(gl.ARRAY_BUFFER, cPositionBuffSize, MV.flatten(chargeValues));
+
+	const cPosition = gl.getAttribLocation(chargesProgram, "cPosition");
+  	gl.vertexAttribPointer(cPosition, 2, gl.FLOAT, false, 0, 0);
+  	gl.enableVertexAttribArray(cPosition);
+	
+	const cType = gl.getAttribLocation(chargesProgram, "cType");
+  	gl.vertexAttribPointer(cType, 1, gl.FLOAT, false, 0, cPositionBuffSize);
+  	gl.enableVertexAttribArray(cType);
 
 	gl.useProgram(chargesProgram);
 
 	gl.uniform1f(gl.getUniformLocation(chargesProgram, "tableWidth"), tableWidth);
 	gl.uniform1f(gl.getUniformLocation(chargesProgram, "tableHeight"), tableHeight);
-	gl.uniform4fv(gl.getUniformLocation(chargesProgram, "color"), MV.vec4(1.0, 1.0, 1.0, 1.0));
 	
 	if (drawCharges) {
-		gl.drawArrays(gl.POINTS, grid.length + grid.length / 2, charges.length);
+		gl.drawArrays(gl.POINTS, 0, charges.length);
 	}
 }
 
@@ -112,11 +134,12 @@ function generateGrid() {
 			grid.push(newPoint);
 		}
 	}
+
+	vPositionBuffSize = grid.length * MV.sizeof['vec2'];
+	vTypeBuffSize = vPositionBuffSize / 2;
 }
 
 function updateCharges() {
-	gl.useProgram(gridProgram);
-
 	for (let i = 0; i < charges.length; i++) {
 		let charge = charges[i];
 		let chargeValue = chargeValues[i];
@@ -131,8 +154,6 @@ function updateCharges() {
 
     	gl.uniform2fv(gl.getUniformLocation(gridProgram, "chargePositions[" + i + "]"), MV.flatten(charges[i]));
 	}
-
-	gl.bufferSubData(gl.ARRAY_BUFFER, (grid.length + grid.length / 2) * MV.sizeof['vec2'], MV.flatten(charges));
 }
 
 window.addEventListener("resize", resizeCanvas);

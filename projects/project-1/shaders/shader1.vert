@@ -16,7 +16,7 @@ varying vec4 fColor;
 
 #define TWOPI 6.28318530718
 #define KE 8.9875517923 * pow(10.0, 9.0)
-#define VECTOR_NORMALIZATION pow(10.0, 11.0)
+#define VECTOR_NORMALIZATION pow(10.0, 11.5)
 
 vec2 calculateVector() {
     vec2 vec = vec2(0.0, 0.0);
@@ -65,6 +65,6 @@ void main() {
     }
     else {
         gl_Position = vPosition / vec4(tableWidth/2.0, tableHeight/2.0, 1.0, 1.0);
-        fColor = vec4(0.0, 0.0, 0.0, 1.0);
+        fColor = vec4(1.0, 0.0, 0.0, 1.0);
     }
 }
