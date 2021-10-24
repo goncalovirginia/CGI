@@ -7,6 +7,9 @@ let gl;
 let gridProgram;
 let chargesProgram;
 
+let gBuffer;
+let cBuffer;
+
 const tableWidth = 3.0;
 let tableHeight;
 
@@ -49,7 +52,7 @@ function setup(shaders) {
 	
 	generateGrid();
 
-	const gBuffer = gl.createBuffer();
+	gBuffer = gl.createBuffer();
 	gl.bindBuffer(gl.ARRAY_BUFFER, gBuffer);
 	gl.bufferData(gl.ARRAY_BUFFER, vPositionBuffSize + vTypeBuffSize, gl.STATIC_DRAW);
 
@@ -59,7 +62,7 @@ function setup(shaders) {
 		gl.bufferSubData(gl.ARRAY_BUFFER, vPositionBuffSize + i * MV.sizeof['vec2'], MV.flatten(MV.vec2(0.0, 1.0)));
 	}
 
-	const cBuffer = gl.createBuffer();
+	cBuffer = gl.createBuffer();
 	gl.bindBuffer(gl.ARRAY_BUFFER, cBuffer);
 	gl.bufferData(gl.ARRAY_BUFFER, cPositionBuffSize + cTypeBuffSize, gl.STATIC_DRAW);
 
@@ -78,6 +81,8 @@ function animate(time) {
 	gl.clear(gl.COLOR_BUFFER_BIT);
 
 	// Grid
+
+	gl.bindBuffer(gl.ARRAY_BUFFER, gBuffer);
 
 	const vPosition = gl.getAttribLocation(gridProgram, "vPosition");
   	gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
