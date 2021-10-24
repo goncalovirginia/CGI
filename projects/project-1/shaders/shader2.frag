@@ -14,7 +14,7 @@ void main() {
         discard;
     }
 
-    if (fType == 1.0) {
+    if (fType > 0.0) {
         if (fragmentPosition.y > -0.4 && fragmentPosition.y < 0.4 && fragmentPosition.x > -0.1 && fragmentPosition.x < 0.1) {
             discard;
         }

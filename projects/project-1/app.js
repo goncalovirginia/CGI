@@ -190,6 +190,10 @@ canvas.addEventListener("click", function(event) {
 		charges.push(MV.vec2(xTable, yTable));
 		event.shiftKey ? chargeValues.push(-1.0) : chargeValues.push(1.0);
 
+		if (event.ctrlKey) {
+			 chargeValues[chargeValues.length - 1] = chargeValues[chargeValues.length - 1] * 2;
+		}
+
 		gl.useProgram(gridProgram);
 		gl.uniform1f(gl.getUniformLocation(gridProgram, 
 			"chargeValues[" + (chargeValues.length - 1) + "]"), 
