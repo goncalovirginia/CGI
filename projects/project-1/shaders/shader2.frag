@@ -5,9 +5,9 @@ varying float fType;
 void main() {
     vec2 fragmentPosition = 2.0 * gl_PointCoord - 1.0;
     float distance = length(fragmentPosition);
-    float distanceSqrd = distance * distance; //circle
+    float distanceSqrd = distance * distance;
 
-    if (distance > 0.5){
+    if (distance > 0.5) {
         discard;
     }
     if (fragmentPosition.x > -0.4 && fragmentPosition.x < 0.4 && fragmentPosition.y > -0.1 && fragmentPosition.y < 0.1) {

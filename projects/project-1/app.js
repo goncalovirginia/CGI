@@ -191,7 +191,10 @@ canvas.addEventListener("click", function(event) {
 		event.shiftKey ? chargeValues.push(-1.0) : chargeValues.push(1.0);
 
 		gl.useProgram(gridProgram);
-		gl.uniform1f(gl.getUniformLocation(gridProgram, "chargeValues[" + (chargeValues.length - 1) + "]"), chargeValues[chargeValues.length-1]);
+		gl.uniform1f(gl.getUniformLocation(gridProgram, 
+			"chargeValues[" + (chargeValues.length - 1) + "]"), 
+			chargeValues[chargeValues.length - 1]
+		);
 	}
 });
 
