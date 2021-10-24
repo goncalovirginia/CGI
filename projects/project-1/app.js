@@ -84,13 +84,7 @@ function animate(time) {
 
 	gl.bindBuffer(gl.ARRAY_BUFFER, gBuffer);
 
-	const vPosition = gl.getAttribLocation(gridProgram, "vPosition");
-  	gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
-  	gl.enableVertexAttribArray(vPosition);
-
-	const vType = gl.getAttribLocation(gridProgram, "vType");
-  	gl.vertexAttribPointer(vType, 1, gl.FLOAT, false, 0, vPositionBuffSize);
-  	gl.enableVertexAttribArray(vType);
+	setGridAttributePointers();
 
 	gl.useProgram(gridProgram);
 
@@ -108,13 +102,7 @@ function animate(time) {
 	gl.bufferSubData(gl.ARRAY_BUFFER, 0, MV.flatten(charges));
 	gl.bufferSubData(gl.ARRAY_BUFFER, cPositionBuffSize, MV.flatten(chargeValues));
 
-	const cPosition = gl.getAttribLocation(chargesProgram, "cPosition");
-  	gl.vertexAttribPointer(cPosition, 2, gl.FLOAT, false, 0, 0);
-  	gl.enableVertexAttribArray(cPosition);
-	
-	const cType = gl.getAttribLocation(chargesProgram, "cType");
-  	gl.vertexAttribPointer(cType, 1, gl.FLOAT, false, 0, cPositionBuffSize);
-  	gl.enableVertexAttribArray(cType);
+	setChargesAttributePointers();
 
 	gl.useProgram(chargesProgram);
 
@@ -144,6 +132,26 @@ function generateGrid() {
 
 	vPositionBuffSize = grid.length * MV.sizeof['vec2'];
 	vTypeBuffSize = vPositionBuffSize / 2;
+}
+
+function setGridAttributePointers() {
+	const vPosition = gl.getAttribLocation(gridProgram, "vPosition");
+  	gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
+  	gl.enableVertexAttribArray(vPosition);
+
+	const vType = gl.getAttribLocation(gridProgram, "vType");
+  	gl.vertexAttribPointer(vType, 1, gl.FLOAT, false, 0, vPositionBuffSize);
+  	gl.enableVertexAttribArray(vType);
+}
+
+function setChargesAttributePointers() {
+	const cPosition = gl.getAttribLocation(chargesProgram, "cPosition");
+  	gl.vertexAttribPointer(cPosition, 2, gl.FLOAT, false, 0, 0);
+  	gl.enableVertexAttribArray(cPosition);
+	
+	const cType = gl.getAttribLocation(chargesProgram, "cType");
+  	gl.vertexAttribPointer(cType, 1, gl.FLOAT, false, 0, cPositionBuffSize);
+  	gl.enableVertexAttribArray(cType);
 }
 
 function updateCharges() {
