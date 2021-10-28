@@ -79,11 +79,16 @@ function render(time) {
     gl.uniformMatrix4fv(uCtm, false, flatten(mult(mProjection, mult(mView, mat4()))));
 
     for (let i = 0; i < instances.length; i++) {
-        if (instances[i] == "cube") {
-            CUBE.draw(gl, program, gl.LINES);
-        }
-        else {
-            SPHERE.draw(gl, program, gl.LINES);
+        switch (instances[i]) {
+            case "cube":
+                CUBE.draw(gl, program, gl.LINES);
+                break;
+            case "sphere":
+                SPHERE.draw(gl, program, gl.LINES);
+                break;
+            default:
+                console.log("Somehow you entered an invalid shape.");
+                break;
         }
     }
 }
