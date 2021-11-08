@@ -68,18 +68,22 @@ function draw(gl, program, primitive)
     gl.useProgram(program);
     
     gl.bindBuffer(gl.ARRAY_BUFFER, points_buffer);
+
     const vPosition = gl.getAttribLocation(program, "vPosition");
     gl.vertexAttribPointer(vPosition, 3, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(vPosition);
     
     gl.bindBuffer(gl.ARRAY_BUFFER, normals_buffer);
+
     const vNormal = gl.getAttribLocation(program, "vNormal");
-    if(vNormal != -1) {
-        gl.enableVertexAttribArray(vNormal);
+
+    if (vNormal != -1) {
         gl.vertexAttribPointer(vNormal, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(vNormal);
     }
     
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, primitive == gl.LINES ? edges_buffer : faces_buffer);
+    
     gl.drawElements(primitive, primitive == gl.LINES ? edges.length : faces.length, gl.UNSIGNED_BYTE, 0);
 }
 
