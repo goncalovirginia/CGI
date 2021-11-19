@@ -1,5 +1,5 @@
 import { mat4, mult, translate, scalem, rotateX, rotateY, rotateZ } from "./MV.js";
-export { modelView, loadIdentity, loadMatrix, pushMatrix, popMatrix, multMatrix, multTranslation, multScale, multRotationX, multRotationY, multRotationZ };
+export {modelView, loadIdentity, loadMatrix, pushMatrix, popMatrix, multMatrix, multTranslation, multScale, multRotationX, multRotationY, multRotationZ};
 
 
 /**
