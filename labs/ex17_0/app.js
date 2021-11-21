@@ -72,7 +72,7 @@ const PLUTO_ORBIT = 5913000000*ORBIT_SCALE;
 const PLUTO_YEAR = 90560;
 const PLUTO_DAY = 153.3;
 
-const VP_DISTANCE = URANUS_ORBIT;
+const VP_DISTANCE = EARTH_ORBIT;
 
 const urls = ["shader.vert", "shader.frag"];
 loadShadersFromURLS(urls).then(shaders => setup(shaders));
