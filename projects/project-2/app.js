@@ -14,7 +14,11 @@ let program;
 let aspect;
 let drawingMode; // gl.TRIANGLES or gl.LINES
 let eye;
+let up;
 let color;
+let axonometricView = false;
+
+let pressedKeys = [];
 
 let floorTiles = [];
 let floorTileColors = [];
@@ -22,13 +26,15 @@ let floorTileColors = [];
 let tankX = 0;
 let tankZ = 0;
 let tankAngle = 0;
+let tankVelocity = 0;
 let turretAngle = 0;
 let gunAngle = 0;
 
 let projectileCoordinates = [];
 let projectileVectors = [];
 
-const TANK_SPEED = 0.1;
+const ACCELERATION = 0.01;
+const MAX_SPEED = 0.25;
 
 const HULL_LENGTH = 8.0;
 const HULL_WIDTH = 4.0;
@@ -58,69 +64,11 @@ function setup(shaders) {
     drawingMode = gl.TRIANGLES; 
 
 	eye = vec3(VP_DISTANCE, VP_DISTANCE, VP_DISTANCE);
+	up = vec3(0, 1, 0);
 
     resize_canvas();
 
 	color = gl.getUniformLocation(program, "color");
-
-    document.onkeydown = function(event) {
-		let radians;
-        switch (event.key) {
-			case 'w':
-				if (gunAngle < 20) {
-					gunAngle++;
-				}
-				break;
-            case 'W':
-                drawingMode = gl.LINES; 
-                break;
-			case 's':
-				if (gunAngle > -10) {
-					gunAngle--;
-				}
-				break;	
-            case 'S':
-                drawingMode = gl.TRIANGLES;
-                break;
-			case 'a':
-				turretAngle++;
-				break;	
-			case 'd':
-				turretAngle--;
-				break;
-			case ' ':
-				addProjectile();
-				break;
-			case 'ArrowUp':
-				radians = -tankAngle * Math.PI/180;
-				tankX += TANK_SPEED * Math.cos(radians);
-				tankZ += TANK_SPEED * Math.sin(radians);
-				break;
-			case 'ArrowDown':
-				radians = -tankAngle * Math.PI/180;
-				tankX -= TANK_SPEED * Math.cos(radians);
-				tankZ -= TANK_SPEED * Math.sin(radians);
-				break;
-			case 'ArrowLeft':
-				tankAngle++;
-				break;
-			case 'ArrowRight':
-				tankAngle--;
-				break;
-			case '1':
-				eye = vec3(VP_DISTANCE, 0, 0);
-				break;
-			case '2':
-				eye = vec3(0, VP_DISTANCE, 0);
-				break;
-			case '3':
-				eye = vec3(0, 0, VP_DISTANCE);
-				break;
-			case '4':
-				axonometricView = !axonometricView;
-				break;
-        }
-    }
 
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     SPHERE.init(gl);
@@ -142,11 +90,13 @@ function render() {
     
     gl.uniformMatrix4fv(gl.getUniformLocation(program, "mProjection"), false, flatten(mProjection));
 
-   	loadMatrix(lookAt(eye, vec3(0, 0, 0), vec3(0, 1, 0)));
+   	loadMatrix(lookAt(eye, vec3(0, 0, 0), up));
 
-	for (let i = 0; i < projectileCoordinates.length; i++) {
-		projectileCoordinates[i][0] += 1;
-	}
+	checkPressedKeys();
+
+	updateTankPosition();
+
+	updateProjectiles();
 
 	pushMatrix();
 		Floor();
@@ -260,4 +210,97 @@ function Projectiles() {
 			SPHERE.draw(gl, program, drawingMode);
 		popMatrix();
 	}
+}
+
+function updateTankPosition() {
+	let radians = -tankAngle * Math.PI/180;
+	tankX += tankVelocity * Math.cos(radians);
+	tankZ += tankVelocity * Math.sin(radians);
+}
+
+function updateProjectiles() {
+	for (let i = 0; i < projectileCoordinates.length; i++) {
+		projectileCoordinates[i][0] += 1;
+	}
+}
+
+document.onkeydown = function(event) {
+	if (!pressedKeys.includes(event.key)) {
+		pressedKeys.push(event.key);
+	}
+}
+
+document.onkeyup = function(event) {
+	let keyIndex = pressedKeys.indexOf(event.key);
+	if (keyIndex != -1) {
+		pressedKeys.splice(keyIndex, 1);
+	}
+}
+
+function checkPressedKeys() {
+	for (let key of pressedKeys) {
+		switch (key) {
+			case 'w':
+				if (gunAngle < 20) {
+					gunAngle++;
+				}
+				break;
+			case 'W':
+				drawingMode = gl.LINES; 
+				break;
+			case 's':
+				if (gunAngle > -10) {
+					gunAngle--;
+				}
+				break;	
+			case 'S':
+				drawingMode = gl.TRIANGLES;
+				break;
+			case 'a':
+				turretAngle++;
+				break;	
+			case 'd':
+				turretAngle--;
+				break;
+			case ' ':
+				addProjectile();
+				break;
+			case 'ArrowUp':
+				tankVelocity + ACCELERATION > MAX_SPEED ? tankVelocity = MAX_SPEED : tankVelocity += ACCELERATION;
+				break;
+			case 'ArrowDown':
+				tankVelocity - ACCELERATION < -MAX_SPEED ? tankVelocity = -MAX_SPEED : tankVelocity -= ACCELERATION;
+				break;
+			case 'ArrowLeft':
+				tankVelocity >= 0 ? tankAngle++ : tankAngle--;
+				break;
+			case 'ArrowRight':
+				tankVelocity >= 0 ? tankAngle-- : tankAngle++;
+				break;
+			case '1':
+				eye = vec3(VP_DISTANCE, VP_DISTANCE/4, 0);
+				up = vec3(0, 1, 0);
+				break;
+			case '2':
+				eye = vec3(0, VP_DISTANCE, 0);
+				up = vec3(0, 0, 1);
+				break;
+			case '3':
+				eye = vec3(0, VP_DISTANCE/4, VP_DISTANCE);
+				up = vec3(0, 1, 0)
+				break;
+			case '4':
+				axonometricView = !axonometricView;
+				break;
+		}
+	}
+
+	if (tankVelocity != 0.0 && !pressedKeys.includes('ArrowUp') && !pressedKeys.includes('ArrowDown')) {
+		if (tankVelocity > 0.0) {
+			tankVelocity - ACCELERATION < 0.0 ? tankVelocity = 0.0 : tankVelocity -= ACCELERATION;
+		}
+		else if (tankVelocity < 0.0 ) {
+			tankVelocity + ACCELERATION > 0.0 ? tankVelocity = 0.0 : tankVelocity += ACCELERATION;
+		}
+	}	
 }
