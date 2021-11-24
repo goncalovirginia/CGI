@@ -1,10 +1,11 @@
 import { buildProgramFromSources, loadShadersFromURLS, setupWebGL } from "../../libs/utils.js";
 import { ortho, lookAt, flatten, vec3 } from "../../libs/MV.js";
-import { modelView, loadMatrix, multMatrix, multRotationY, multScale, pushMatrix, popMatrix, multTranslation, multRotationZ } from "../../libs/stack.js";
+import { modelView, loadMatrix, multMatrix, multRotationY, multScale, pushMatrix, popMatrix, multTranslation, multRotationZ, multRotationX } from "../../libs/stack.js";
 
 import * as SPHERE from '../../libs/sphere.js';
 import * as CUBE from '../../libs/cube.js';
 import * as CYLINDER from '../../libs/cylinder.js';
+import * as TORUS from '../../libs/torus.js';
 
 /** @type WebGLRenderingContext */
 let gl;
@@ -29,6 +30,7 @@ let tankAngle = 0;
 let tankVelocity = 0;
 let turretAngle = 0;
 let gunAngle = 0;
+let wheelAngle = 0;
 
 let projectileCoordinates = [];
 let projectileVectors = [];
@@ -46,6 +48,9 @@ const TURRET_HEIGHT = 2.0;
 
 const GUN_LENGTH = 5.0;
 const GUN_DIAMETER = 0.5;
+
+const NUM_WHEELS = 8;
+const WHEEL_RADIUS = HULL_LENGTH/(NUM_WHEELS/2)/2;
 
 const PROJECTILE_DIAMETER = GUN_DIAMETER * 0.9;
 
@@ -71,9 +76,12 @@ function setup(shaders) {
 	color = gl.getUniformLocation(program, "color");
 
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
+
     SPHERE.init(gl);
 	CUBE.init(gl);
 	CYLINDER.init(gl);
+	TORUS.init(gl);
+
     gl.enable(gl.DEPTH_TEST);   // Enables Z-buffer depth test
 
 	generateFloor();
@@ -97,6 +105,8 @@ function render() {
 	updateTankPosition();
 
 	updateProjectiles();
+
+	updateWheelRotation();
 
 	pushMatrix();
 		Floor();
@@ -165,6 +175,9 @@ function Tank() {
 			popMatrix();
 		popMatrix();
 	popMatrix();
+	pushMatrix();
+		Wheels();
+	popMatrix();
 }
 
 function Hull() {
@@ -184,7 +197,7 @@ function Turret() {
 }
 
 function Gun() {
-	multTranslation(vec3(TURRET_LENGTH, 0, 0));
+	multTranslation(vec3(TURRET_LENGTH , 0, 0));
 	multRotationZ(90);
 	multRotationZ(gunAngle);
 	multScale(vec3(GUN_DIAMETER, GUN_LENGTH, GUN_DIAMETER));
@@ -192,6 +205,48 @@ function Gun() {
     uploadModelView();
 	gl.uniform3fv(color, vec3(0.0, 0.29, 0.0));
 	CYLINDER.draw(gl, program, drawingMode);
+}
+
+function Wheels() {
+	WheelsSide(HULL_WIDTH/2 + WHEEL_RADIUS/3);
+	WheelsSide(-HULL_WIDTH/2 - WHEEL_RADIUS/3);
+}
+
+function WheelsSide(z) {
+	for (let i = 1; i <= NUM_WHEELS/2; i++) {
+		let x = -HULL_LENGTH/2 - WHEEL_RADIUS + WHEEL_RADIUS * 2 * i;
+		pushMatrix();
+			multTranslation(vec3(x, -HULL_HEIGHT/2 + WHEEL_RADIUS, z));
+			multRotationY(90);
+			multRotationX(wheelAngle);
+			multRotationZ(90);
+			pushMatrix();
+				Wheel();
+			popMatrix();
+			for (let angle = 0; angle <= 120; angle += 60) {
+				pushMatrix();
+					Rim(angle);
+				popMatrix();
+			}
+		popMatrix();
+	}
+}
+
+function Wheel() {
+	multScale(vec3(WHEEL_RADIUS*1.5, WHEEL_RADIUS*1.5, WHEEL_RADIUS*1.5));
+
+	uploadModelView();
+	gl.uniform3fv(color, vec3(0.05, 0.05, 0.05));
+	TORUS.draw(gl, program, drawingMode);
+}
+
+function Rim(angle) {
+	multRotationY(angle);
+	multScale(vec3(WHEEL_RADIUS, WHEEL_RADIUS/2, WHEEL_RADIUS/4));
+
+	uploadModelView();
+	gl.uniform3fv(color, vec3(0.1, 0.1, 0.1));
+	CUBE.draw(gl, program, drawingMode);
 }
 
 function addProjectile() {
@@ -222,6 +277,10 @@ function updateProjectiles() {
 	for (let i = 0; i < projectileCoordinates.length; i++) {
 		projectileCoordinates[i][0] += 1;
 	}
+}
+
+function updateWheelRotation() {
+	wheelAngle += tankVelocity/WHEEL_RADIUS * 30;
 }
 
 document.onkeydown = function(event) {
