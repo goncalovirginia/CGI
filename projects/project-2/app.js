@@ -40,7 +40,8 @@ const MAX_SPEED = 0.25;
 
 const HULL_LENGTH = 8.0;
 const HULL_WIDTH = 4.0;
-const HULL_HEIGHT = 3.0;
+const HULL_HEIGHT = 2.5;
+const HULL_DISTANCE_OFF_GROUND = 0.5;
 
 const TURRET_LENGTH = 4.0;
 const TURRET_WIDTH = 3.0;
@@ -54,7 +55,7 @@ const WHEEL_RADIUS = HULL_LENGTH/(NUM_WHEELS/2)/2;
 
 const PROJECTILE_DIAMETER = GUN_DIAMETER * 0.9;
 
-const VP_DISTANCE = 20;
+let vpDistance = 20;
 
 const urls = ["shader.vert", "shader.frag"];
 loadShadersFromURLS(urls).then(shaders => setup(shaders));
@@ -68,7 +69,6 @@ function setup(shaders) {
 
     drawingMode = gl.TRIANGLES; 
 
-	eye = vec3(VP_DISTANCE, VP_DISTANCE, VP_DISTANCE);
 	up = vec3(0, 1, 0);
 
     resize_canvas();
@@ -97,6 +97,10 @@ function render() {
     gl.useProgram(program);
     
     gl.uniformMatrix4fv(gl.getUniformLocation(program, "mProjection"), false, flatten(mProjection));
+
+	eye = vec3(vpDistance, vpDistance, vpDistance);
+
+	resize_canvas();
 
    	loadMatrix(lookAt(eye, vec3(0, 0, 0), up));
 
@@ -128,7 +132,7 @@ function resize_canvas() {
     aspect = canvas.width / canvas.height;
 
     gl.viewport(0, 0, canvas.width, canvas.height);
-    mProjection = ortho(-VP_DISTANCE*aspect,VP_DISTANCE*aspect, -VP_DISTANCE, VP_DISTANCE,-3*VP_DISTANCE,3*VP_DISTANCE);
+    mProjection = ortho(-vpDistance*aspect,vpDistance*aspect, -vpDistance, vpDistance,-3*vpDistance,3*vpDistance);
 }
 
 function uploadModelView() {
@@ -158,7 +162,7 @@ function Floor() {
 }
 
 function Tank() {
-	multTranslation(vec3(tankX, HULL_HEIGHT/2, tankZ));
+	multTranslation(vec3(tankX, HULL_HEIGHT/2 + HULL_DISTANCE_OFF_GROUND, tankZ));
 	multRotationY(tankAngle);
 	pushMatrix();
 		Hull();
@@ -184,7 +188,7 @@ function Hull() {
     multScale(vec3(HULL_LENGTH, HULL_HEIGHT, HULL_WIDTH));
 
     uploadModelView();
-	gl.uniform3fv(color, vec3(0.0, 0.25, 0.0));
+	gl.uniform3fv(color, vec3(0.0, 0.16, 0.0));
     CUBE.draw(gl, program, drawingMode);
 }
 
@@ -192,7 +196,7 @@ function Turret() {
 	multScale(vec3(TURRET_LENGTH, TURRET_HEIGHT, TURRET_WIDTH));
 
     uploadModelView();
-	gl.uniform3fv(color, vec3(0.0, 0.27, 0.0));
+	gl.uniform3fv(color, vec3(0.0, 0.18, 0.0));
     CUBE.draw(gl, program, drawingMode);
 }
 
@@ -203,7 +207,7 @@ function Gun() {
 	multScale(vec3(GUN_DIAMETER, GUN_LENGTH, GUN_DIAMETER));
 
     uploadModelView();
-	gl.uniform3fv(color, vec3(0.0, 0.29, 0.0));
+	gl.uniform3fv(color, vec3(0.0, 0.2, 0.0));
 	CYLINDER.draw(gl, program, drawingMode);
 }
 
@@ -216,7 +220,7 @@ function WheelsSide(z) {
 	for (let i = 1; i <= NUM_WHEELS/2; i++) {
 		let x = -HULL_LENGTH/2 - WHEEL_RADIUS + WHEEL_RADIUS * 2 * i;
 		pushMatrix();
-			multTranslation(vec3(x, -HULL_HEIGHT/2 + WHEEL_RADIUS, z));
+			multTranslation(vec3(x, -HULL_HEIGHT/2 - HULL_DISTANCE_OFF_GROUND + WHEEL_RADIUS, z));
 			multRotationY(90);
 			multRotationX(wheelAngle);
 			multRotationZ(90);
@@ -331,25 +335,35 @@ function checkPressedKeys() {
 				tankVelocity - ACCELERATION < -MAX_SPEED ? tankVelocity = -MAX_SPEED : tankVelocity -= ACCELERATION;
 				break;
 			case 'ArrowLeft':
-				tankVelocity >= 0 ? tankAngle++ : tankAngle--;
+				tankVelocity >= 0.0 ? tankAngle++ : tankAngle--;
 				break;
 			case 'ArrowRight':
-				tankVelocity >= 0 ? tankAngle-- : tankAngle++;
+				tankVelocity >= 0.0 ? tankAngle-- : tankAngle++;
 				break;
 			case '1':
-				eye = vec3(VP_DISTANCE, VP_DISTANCE/4, 0);
-				up = vec3(0, 1, 0);
+				eye = vec3(vpDistance, 0.0, 0.0);
+				up = vec3(0.0, 1.0, 0.0);
 				break;
 			case '2':
-				eye = vec3(0, VP_DISTANCE, 0);
-				up = vec3(0, 0, 1);
+				eye = vec3(0.0, vpDistance, 0.0);
+				up = vec3(0, 0, 1.0);
 				break;
 			case '3':
-				eye = vec3(0, VP_DISTANCE/4, VP_DISTANCE);
-				up = vec3(0, 1, 0)
+				eye = vec3(0.0, 0.0, vpDistance);
+				up = vec3(0.0, 1.0, 0.0)
 				break;
 			case '4':
 				axonometricView = !axonometricView;
+				break;
+			case '+':
+				if (vpDistance > 5) {
+					vpDistance--;
+				}
+				break;
+			case '-':
+				if (vpDistance < 25) {
+					vpDistance++;
+				}
 				break;
 		}
 	}
