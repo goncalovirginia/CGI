@@ -164,8 +164,12 @@ function Floor() {
 }
 
 function Tank() {
-	multTranslation(vec3(tankX, HULL_HEIGHT/2 + HULL_DISTANCE_OFF_GROUND, tankZ));
+	multTranslation(vec3(tankX, WHEEL_RADIUS, tankZ));
 	multRotationY(tankAngle);
+	pushMatrix();
+		Wheels();
+	popMatrix();
+	multTranslation(vec3(0.0, HULL_HEIGHT/2, 0.0));
 	pushMatrix();
 		Hull();
 	popMatrix();
@@ -181,9 +185,6 @@ function Tank() {
 			popMatrix();
 		popMatrix();
 	popMatrix();
-	pushMatrix();
-		Wheels();
-	popMatrix();
 }
 
 function Hull() {
@@ -195,16 +196,26 @@ function Hull() {
     	CUBE.draw(gl, program, drawingMode);
 	popMatrix();
 	pushMatrix();
-		multTranslation(vec3(0.0, HULL_HEIGHT/2 - 0.5, HULL_WIDTH/2 +0.25));
-		multScale(vec3(HULL_LENGTH, 0.5, 0.5));
+		multScale(vec3(HULL_LENGTH, 1.0, 1.0));
+		multTranslation(vec3(0.0, HULL_HEIGHT/2 - 1, HULL_WIDTH/2 + 0.5));
 
 		uploadModelView();
 		gl.uniform3fv(color, vec3(0.0, 0.18, 0.0));
     	CUBE.draw(gl, program, drawingMode);
 	popMatrix();
 	pushMatrix();
-		multTranslation(vec3(0.0, HULL_HEIGHT/2 - 0.5, -HULL_WIDTH/2 - 0.25));
-		multScale(vec3(HULL_LENGTH, 0.5, 0.5));
+		multScale(vec3(HULL_LENGTH, 1.0, 1.0));
+		multTranslation(vec3(0.0, HULL_HEIGHT/2 - 1, -HULL_WIDTH/2 - 0.5));
+
+		uploadModelView();
+		gl.uniform3fv(color, vec3(0.0, 0.18, 0.0));
+    	CUBE.draw(gl, program, drawingMode);
+	popMatrix();
+	pushMatrix();
+		multTranslation(vec3(HULL_LENGTH/2, 0.0, 0.0));	
+		multRotationZ(45);
+		let scale = Math.sqrt(Math.pow(HULL_HEIGHT, 2.0)/2);
+		multScale(vec3(scale, scale, HULL_WIDTH*0.99));
 
 		uploadModelView();
 		gl.uniform3fv(color, vec3(0.0, 0.18, 0.0));
@@ -291,7 +302,7 @@ function Wheels() {
 }
 
 function WheelPair(x) {
-	multTranslation(vec3(x, -HULL_HEIGHT/2 - HULL_DISTANCE_OFF_GROUND + WHEEL_RADIUS, 0.0));
+	multTranslation(vec3(x, 0.0, 0.0));
 	pushMatrix();
 		pushMatrix();
 			Wheel(HULL_WIDTH/2 + WHEEL_RADIUS/3)
@@ -302,6 +313,7 @@ function WheelPair(x) {
 	popMatrix();
 	pushMatrix();
 		multRotationX(90);
+		multRotationY(wheelAngle);
 		multScale(vec3(0.5, HULL_WIDTH, 0.5));
 		
 		uploadModelView();
