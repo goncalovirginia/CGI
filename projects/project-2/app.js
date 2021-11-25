@@ -283,36 +283,50 @@ function Gun() {
 }
 
 function Wheels() {
-	WheelsSide(HULL_WIDTH/2 + WHEEL_RADIUS/3);
-	WheelsSide(-HULL_WIDTH/2 - WHEEL_RADIUS/3);
-}
-
-function WheelsSide(z) {
 	for (let i = 1; i <= NUM_WHEELS/2; i++) {
-		let x = -HULL_LENGTH/2 - WHEEL_RADIUS + WHEEL_RADIUS * 2 * i;
 		pushMatrix();
-			multTranslation(vec3(x, -HULL_HEIGHT/2 - HULL_DISTANCE_OFF_GROUND + WHEEL_RADIUS, z));
-			multRotationY(90);
-			multRotationX(wheelAngle);
-			multRotationZ(90);
-			pushMatrix();
-				Wheel();
-			popMatrix();
-			for (let angle = 0; angle <= 120; angle += 60) {
-				pushMatrix();
-					Rim(angle);
-				popMatrix();
-			}
+			WheelPair(-HULL_LENGTH/2 - WHEEL_RADIUS + WHEEL_RADIUS * 2 * i);
 		popMatrix();
 	}
 }
 
-function Wheel() {
-	multScale(vec3(WHEEL_RADIUS*1.5, WHEEL_RADIUS*1.5, WHEEL_RADIUS*1.5));
+function WheelPair(x) {
+	multTranslation(vec3(x, -HULL_HEIGHT/2 - HULL_DISTANCE_OFF_GROUND + WHEEL_RADIUS, 0.0));
+	pushMatrix();
+		pushMatrix();
+			Wheel(HULL_WIDTH/2 + WHEEL_RADIUS/3)
+		popMatrix();
+		pushMatrix();
+			Wheel(-HULL_WIDTH/2 - WHEEL_RADIUS/3);
+		popMatrix();
+	popMatrix();
+	pushMatrix();
+		multRotationX(90);
+		multScale(vec3(0.5, HULL_WIDTH, 0.5));
+		
+		uploadModelView();
+		gl.uniform3fv(color, vec3(0.1, 0.1, 0.1));
+		CYLINDER.draw(gl, program, drawingMode);
+	popMatrix();
+}
 
-	uploadModelView();
-	gl.uniform3fv(color, vec3(0.05, 0.05, 0.05));
-	TORUS.draw(gl, program, drawingMode);
+function Wheel(z) {
+	multTranslation(vec3(0.0, 0.0, z));
+	multRotationY(90);
+	multRotationX(wheelAngle);
+	multRotationZ(90);
+	pushMatrix();
+		multScale(vec3(WHEEL_RADIUS*1.5, WHEEL_RADIUS*1.5, WHEEL_RADIUS*1.5));
+		
+		uploadModelView();
+		gl.uniform3fv(color, vec3(0.05, 0.05, 0.05));
+		TORUS.draw(gl, program, drawingMode);
+	popMatrix();
+	for (let angle = 0; angle <= 120; angle += 60) {
+		pushMatrix();
+			Rim(angle);
+		popMatrix();
+	}
 }
 
 function Rim(angle) {
