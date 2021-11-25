@@ -48,7 +48,7 @@ const TURRET_LENGTH = 5.0;
 const TURRET_WIDTH = 3.0;
 const TURRET_HEIGHT = 2.0;
 
-const GUN_LENGTH = 10.0;
+const GUN_LENGTH = 5.0;
 const GUN_RADIUS = 0.5;
 
 const NUM_WHEELS = 8;
@@ -197,7 +197,7 @@ function Hull() {
 	popMatrix();
 	pushMatrix();
 		multScale(vec3(HULL_LENGTH, 1.0, 1.0));
-		multTranslation(vec3(0.0, HULL_HEIGHT/2 - 1, HULL_WIDTH/2 + 0.5));
+		multTranslation(vec3(0.0, HULL_HEIGHT/2 - 0.75, HULL_WIDTH/2 + 0.5));
 
 		uploadModelView();
 		gl.uniform3fv(color, vec3(0.0, 0.18, 0.0));
@@ -205,7 +205,7 @@ function Hull() {
 	popMatrix();
 	pushMatrix();
 		multScale(vec3(HULL_LENGTH, 1.0, 1.0));
-		multTranslation(vec3(0.0, HULL_HEIGHT/2 - 1, -HULL_WIDTH/2 - 0.5));
+		multTranslation(vec3(0.0, HULL_HEIGHT/2 - 0.75, -HULL_WIDTH/2 - 0.5));
 
 		uploadModelView();
 		gl.uniform3fv(color, vec3(0.0, 0.18, 0.0));
@@ -266,15 +266,24 @@ function Turret() {
 }
 
 function Gun() {
-	multTranslation(vec3(TURRET_LENGTH/2, 0, 0));
+	multTranslation(vec3(GUN_LENGTH/2, 0, 0));
 	multRotationZ(90);
 	multRotationZ(gunAngle);
+	multTranslation(vec3(0, -GUN_LENGTH/2, 0));
 	pushMatrix();
+		multTranslation(vec3(0, GUN_LENGTH/2 - GUN_LENGTH/8.0, 0));
 		multScale(vec3(GUN_RADIUS*1.5, GUN_LENGTH/4.0, GUN_RADIUS*1.5));
 
 		uploadModelView();
 		gl.uniform3fv(color, vec3(0.0, 0.2, 0.0));
 		CYLINDER.draw(gl, program, drawingMode);
+	popMatrix();
+	pushMatrix();
+		multTranslation(vec3(0, GUN_LENGTH/2, 0));
+
+		uploadModelView();
+		gl.uniform3fv(color, vec3(0.0, 0.22, 0.0));
+		SPHERE.draw(gl, program, drawingMode);
 	popMatrix();
 	pushMatrix();
 		multScale(vec3(GUN_RADIUS, GUN_LENGTH, GUN_RADIUS));
@@ -412,7 +421,7 @@ function checkPressedKeys() {
 				drawingMode = gl.LINES; 
 				break;
 			case 's':
-				if (gunAngle > -8) {
+				if (gunAngle > -10) {
 					gunAngle--;
 				}
 				break;	
