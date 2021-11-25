@@ -69,7 +69,9 @@ function setup(shaders) {
 
     drawingMode = gl.TRIANGLES; 
 
-	up = vec3(0, 1, 0);
+	eye = vec3(vpDistance, vpDistance, vpDistance);
+
+	up = vec3(0.0, 1.0, 0.0);
 
     resize_canvas();
 
@@ -97,8 +99,6 @@ function render() {
     gl.useProgram(program);
     
     gl.uniformMatrix4fv(gl.getUniformLocation(program, "mProjection"), false, flatten(mProjection));
-
-	eye = vec3(vpDistance, vpDistance, vpDistance);
 
 	resize_canvas();
 
@@ -132,7 +132,7 @@ function resize_canvas() {
     aspect = canvas.width / canvas.height;
 
     gl.viewport(0, 0, canvas.width, canvas.height);
-    mProjection = ortho(-vpDistance*aspect,vpDistance*aspect, -vpDistance, vpDistance,-3*vpDistance,3*vpDistance);
+    mProjection = ortho(-vpDistance*aspect, vpDistance*aspect, -vpDistance, vpDistance, -5*vpDistance, 5*vpDistance);
 }
 
 function uploadModelView() {
@@ -142,7 +142,7 @@ function uploadModelView() {
 function generateFloor() {
 	for (let i = -25; i < 25; i += 1) {
 		for (let j = -25; j < 25; j += 1) {
-			floorTiles.push(vec3(i, 0, j));
+			floorTiles.push(vec3(i, -0.5, j));
 			floorTileColors.push(vec3(0.25 + Math.random() * 0.01, 0.08 + Math.random() * 0.01, 0.0));
 		}
 	}
@@ -153,7 +153,7 @@ function Floor() {
 		gl.uniform3fv(color, floorTileColors[i]);
 		pushMatrix();
 			multTranslation(floorTiles[i]);
-			multScale(vec3(1, 0, 1));
+			multScale(vec3(1, 1.0, 1));
 
 			uploadModelView();
 			CUBE.draw(gl, program, drawingMode);
@@ -254,7 +254,7 @@ function Rim(angle) {
 }
 
 function addProjectile() {
-	projectileCoordinates.push(vec3(tankX, HULL_HEIGHT + TURRET_HEIGHT/2, tankZ));
+	projectileCoordinates.push(vec3(tankX, HULL_DISTANCE_OFF_GROUND + HULL_HEIGHT + TURRET_HEIGHT/2, tankZ));
 	projectileVectors.push(vec3(turretAngle, 0.0, 0.0));
 }
 
@@ -291,6 +291,9 @@ document.onkeydown = function(event) {
 	if (!pressedKeys.includes(event.key)) {
 		pressedKeys.push(event.key);
 	}
+	if (event.key == ' ') {
+		addProjectile();
+	}
 }
 
 document.onkeyup = function(event) {
@@ -325,9 +328,6 @@ function checkPressedKeys() {
 			case 'd':
 				turretAngle--;
 				break;
-			case ' ':
-				addProjectile();
-				break;
 			case 'ArrowUp':
 				tankVelocity + ACCELERATION > MAX_SPEED ? tankVelocity = MAX_SPEED : tankVelocity += ACCELERATION;
 				break;
@@ -346,7 +346,7 @@ function checkPressedKeys() {
 				break;
 			case '2':
 				eye = vec3(0.0, vpDistance, 0.0);
-				up = vec3(0, 0, 1.0);
+				up = vec3(0.0, 0.0, 1.0);
 				break;
 			case '3':
 				eye = vec3(0.0, 0.0, vpDistance);
@@ -356,13 +356,13 @@ function checkPressedKeys() {
 				axonometricView = !axonometricView;
 				break;
 			case '+':
-				if (vpDistance > 5) {
-					vpDistance--;
+				if (vpDistance > 10.0) {
+					vpDistance -= 1.0;
 				}
 				break;
 			case '-':
-				if (vpDistance < 25) {
-					vpDistance++;
+				if (vpDistance < 25.0) {
+					vpDistance += 1.0;
 				}
 				break;
 		}
