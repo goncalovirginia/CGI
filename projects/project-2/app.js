@@ -392,7 +392,7 @@ function updateProjectiles() {
 }
 
 function updateWheelRotation() {
-	wheelAngle += tankVelocity/WHEEL_RADIUS * 45;
+	wheelAngle += tankVelocity/WHEEL_RADIUS * 180.0/Math.PI;
 }
 
 document.onkeydown = function(event) {
