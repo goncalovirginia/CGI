@@ -18,7 +18,6 @@ let drawingMode; // gl.TRIANGLES or gl.LINES
 let eye;
 let up;
 let color;
-let time = 0;
 
 let pressedKeys = [];
 
@@ -55,6 +54,7 @@ const NUM_WHEELS = 8;
 const WHEEL_RADIUS = HULL_LENGTH/(NUM_WHEELS/2)/2;
 
 const PROJECTILE_RADIUS = GUN_RADIUS * 0.9;
+const PROJECTILE_GRAVITY = 9.8/250;
 
 const GREENS = [vec3(0.06, 0.16, 0.06), vec3(0.08, 0.2, 0.08), vec3(0.1, 0.24, 0.1)];
 const GREYS = [vec3(0.02, 0.02, 0.02), vec3(0.1, 0.1, 0.1)];
@@ -97,7 +97,6 @@ function setup(shaders) {
 }
 
 function render() {
-	time++;
 
     window.requestAnimationFrame(render);
 
@@ -403,9 +402,16 @@ function updateTankPosition() {
 
 function updateProjectiles() {
 	for (let i = 0; i < projectileCoordinates.length; i++) {
+		if (projectileCoordinates[i][1] < 0.0) {
+			projectileCoordinates.splice(i, 1);
+			projectileVectors.splice(i, 1);
+			continue;
+		} 
+
 		for (let j = 0; j < 3; j++) {
 			projectileCoordinates[i][j] += projectileVectors[i][j];
 		}
+		projectileVectors[i][1] -= PROJECTILE_GRAVITY;
 	}
 }
 
