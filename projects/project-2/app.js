@@ -56,10 +56,38 @@ const WHEEL_RADIUS = HULL_LENGTH/(NUM_WHEELS/2)/2;
 const PROJECTILE_RADIUS = GUN_RADIUS * 0.9;
 const PROJECTILE_GRAVITY = 9.8/250;
 
-const GREENS = [vec3(0.06, 0.16, 0.06), vec3(0.08, 0.2, 0.08), vec3(0.1, 0.24, 0.1)];
+const GREENS = [vec3(0.06, 0.16, 0.06), vec3(0.08, 0.2, 0.08), vec3(0.1, 0.24, 0.1), vec3(0.1, 1.0, 0.1)];
 const GREYS = [vec3(0.02, 0.02, 0.02), vec3(0.1, 0.1, 0.1)];
+const REDS = [vec3(1.0, 0.1, 0.1)];
 
 let vpDistance = 20;
+
+class Target {
+
+	constructor(coordinates) {
+		this.coordinates = coordinates;
+		this.hit = false;
+	}
+
+	checkHit(projectileCoordinates) {
+		if (distance(this.coordinates, projectileCoordinates) < 1.0) {
+			this.hit = true;
+		}
+	}
+
+	draw() {
+		pushMatrix();
+			multTranslation(this.coordinates);
+			multRotationX(90);
+			
+			uploadModelView();
+			this.hit ? gl.uniform3fv(color, GREENS[3]) : gl.uniform3fv(color, REDS[0]);
+			TORUS.draw(gl, program, drawingMode);
+		popMatrix();
+	}
+}
+
+let targets = [];
 
 const urls = ["shader.vert", "shader.frag"];
 loadShadersFromURLS(urls).then(shaders => setup(shaders));
@@ -92,6 +120,10 @@ function setup(shaders) {
     gl.enable(gl.DEPTH_TEST);   // Enables Z-buffer depth test
 
 	generateFloor();
+
+	for (let i = 0; i < 5; i++) {
+		targets.push(new Target(vec3(-10.0 + 4.0 * i, 2.0, -30.0)));
+	}
     
     window.requestAnimationFrame(render);
 }
@@ -127,6 +159,10 @@ function render() {
 	pushMatrix();
 		Projectiles();
 	popMatrix();
+
+	for (let i = 0; i < targets.length; i++) {
+		targets[i].draw();
+	}
 }
 
 window.addEventListener("resize", resize_canvas);
@@ -412,6 +448,10 @@ function updateProjectiles() {
 			projectileCoordinates[i][j] += projectileVectors[i][j];
 		}
 		projectileVectors[i][1] -= PROJECTILE_GRAVITY;
+
+		for (let target of targets) {
+			target.checkHit(projectileCoordinates[i]);
+		}
 	}
 }
 
@@ -516,4 +556,8 @@ function checkPressedKeys() {
 			tankVelocity + ACCELERATION > 0.0 ? tankVelocity = 0.0 : tankVelocity += ACCELERATION;
 		}
 	}	
+}
+
+function distance(point1, point2) {
+	return Math.hypot(Math.abs(point1[0] - point2[0]), Math.abs(point1[1] - point2[1]), Math.abs(point1[2] - point2[2]));
 }
