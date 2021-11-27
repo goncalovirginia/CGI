@@ -41,7 +41,6 @@ const MAX_SPEED = 0.25;
 const HULL_LENGTH = 8.0;
 const HULL_WIDTH = 4.0;
 const HULL_HEIGHT = 2.5;
-const HULL_DISTANCE_OFF_GROUND = 0.5;
 
 const TURRET_LENGTH = 5.0;
 const TURRET_WIDTH = 3.0;
@@ -53,7 +52,7 @@ const GUN_RADIUS = 0.5;
 const NUM_WHEELS = 8;
 const WHEEL_RADIUS = HULL_LENGTH/(NUM_WHEELS/2)/2;
 
-const PROJECTILE_DIAMETER = GUN_RADIUS * 0.9;
+const PROJECTILE_RADIUS = GUN_RADIUS * 0.9;
 
 const GREENS = [vec3(0.06, 0.16, 0.06), vec3(0.08, 0.2, 0.08), vec3(0.1, 0.24, 0.1)];
 const GREYS = [vec3(0.02, 0.02, 0.02), vec3(0.1, 0.1, 0.1)];
@@ -362,15 +361,28 @@ function Rim(angle) {
 }
 
 function addProjectile() {
-	projectileCoordinates.push(vec3(tankX, HULL_DISTANCE_OFF_GROUND + HULL_HEIGHT + TURRET_HEIGHT/2, tankZ));
-	projectileVectors.push(vec3(turretAngle, 0.0, 0.0));
+	let coordinates = vec3(tankX, WHEEL_RADIUS + HULL_HEIGHT + TURRET_HEIGHT/2, tankZ);
+	let angle = (tankAngle + turretAngle + 90) * Math.PI/180;
+	let vector = vec3(Math.sin(angle), Math.sin(gunAngle * Math.PI/180), Math.cos(angle));
+	let magnitude = Math.hypot(vector[0], vector[1], vector[2]);
+
+	for (let i = 0; i < 3; i++) {
+		vector[i] /= magnitude;
+	}
+
+	coordinates[0] += vector[0] * (TURRET_LENGTH/2 + GUN_LENGTH);
+	coordinates[1] += vector[1] * GUN_LENGTH;
+	coordinates[2] += vector[2] * (TURRET_LENGTH/2 + GUN_LENGTH);
+
+	projectileCoordinates.push(coordinates);
+	projectileVectors.push(vector);
 }
 
 function Projectiles() {
 	for (let i = 0; i < projectileCoordinates.length; i++) {
 		pushMatrix();
 			multTranslation(projectileCoordinates[i]);
-			multScale(vec3(PROJECTILE_DIAMETER, PROJECTILE_DIAMETER, PROJECTILE_DIAMETER));
+			multScale(vec3(PROJECTILE_RADIUS, PROJECTILE_RADIUS, PROJECTILE_RADIUS));
 
 			uploadModelView();
 			gl.uniform3fv(color, vec3(0.2, 0.2, 0.2));
@@ -387,7 +399,9 @@ function updateTankPosition() {
 
 function updateProjectiles() {
 	for (let i = 0; i < projectileCoordinates.length; i++) {
-		projectileCoordinates[i][0] += 1;
+		for (let j = 0; j < 3; j++) {
+			projectileCoordinates[i][j] += projectileVectors[i][j];
+		}
 	}
 }
 
@@ -396,11 +410,11 @@ function updateWheelRotation() {
 }
 
 document.onkeydown = function(event) {
-	if (!pressedKeys.includes(event.key)) {
-		pressedKeys.push(event.key);
-	}
 	if (event.key == ' ') {
 		addProjectile();
+	}
+	else if (!pressedKeys.includes(event.key)) {
+		pressedKeys.push(event.key);
 	}
 }
 
