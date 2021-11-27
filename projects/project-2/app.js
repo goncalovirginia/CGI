@@ -18,6 +18,7 @@ let drawingMode; // gl.TRIANGLES or gl.LINES
 let eye;
 let up;
 let color;
+let time = 0;
 
 let pressedKeys = [];
 
@@ -34,6 +35,7 @@ let wheelAngle = 0;
 
 let projectileCoordinates = [];
 let projectileVectors = [];
+let firedProjectile = false;
 
 const ACCELERATION = 0.01;
 const MAX_SPEED = 0.25;
@@ -95,6 +97,8 @@ function setup(shaders) {
 }
 
 function render() {
+	time++;
+
     window.requestAnimationFrame(render);
 
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -410,10 +414,7 @@ function updateWheelRotation() {
 }
 
 document.onkeydown = function(event) {
-	if (event.key == ' ') {
-		addProjectile();
-	}
-	else if (!pressedKeys.includes(event.key)) {
+	if (!pressedKeys.includes(event.key)) {
 		pressedKeys.push(event.key);
 	}
 }
@@ -421,7 +422,11 @@ document.onkeydown = function(event) {
 document.onkeyup = function(event) {
 	let keyIndex = pressedKeys.indexOf(event.key);
 	if (keyIndex != -1) {
-		pressedKeys.splice(keyIndex, 1);
+		let key = pressedKeys.splice(keyIndex, 1);
+
+		if (key == ' ') {
+			firedProjectile = false;
+		}
 	}
 }
 
@@ -461,6 +466,12 @@ function checkPressedKeys() {
 				break;
 			case 'ArrowRight':
 				tankVelocity >= 0.0 ? tankAngle-- : tankAngle++;
+				break;
+			case ' ' :
+				if (!firedProjectile) {
+					addProjectile();
+					firedProjectile = true;
+				}
 				break;
 			case '1':
 				eye = vec3(vpDistance, 0.0, 0.0);
