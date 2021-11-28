@@ -56,9 +56,11 @@ const WHEEL_RADIUS = HULL_LENGTH/(NUM_WHEELS/2)/2;
 const PROJECTILE_RADIUS = GUN_RADIUS * 0.9;
 const PROJECTILE_GRAVITY = 9.8/250;
 
-const GREENS = [vec3(0.06, 0.16, 0.06), vec3(0.08, 0.2, 0.08), vec3(0.1, 0.24, 0.1), vec3(0.1, 1.0, 0.1)];
-const GREYS = [vec3(0.02, 0.02, 0.02), vec3(0.1, 0.1, 0.1)];
+const GREENS = [vec3(0.06, 0.16, 0.06), vec3(0.08, 0.2, 0.08), vec3(0.1, 0.24, 0.1), vec3(0.1, 1.0, 0.1), vec3(0.05, 0.1, 0.05)];
+const GREYS = [vec3(0.02, 0.02, 0.02), vec3(0.1, 0.1, 0.1), vec3(0.05, 0.05, 0.05)];
 const REDS = [vec3(1.0, 0.1, 0.1)];
+
+const ZOOM_INCREMENT = 0.5;
 
 let vpDistance = 20;
 
@@ -121,9 +123,7 @@ function setup(shaders) {
 
 	generateFloor();
 
-	for (let i = 0; i < 5; i++) {
-		targets.push(new Target(vec3(-10.0 + 4.0 * i, 2.0, -30.0)));
-	}
+	generateTargets();
     
     window.requestAnimationFrame(render);
 }
@@ -192,12 +192,11 @@ function generateFloor() {
 
 function Floor() {
 	for (let i = 0; i < floorTiles.length; i++) {
-		gl.uniform3fv(color, floorTileColors[i]);
 		pushMatrix();
 			multTranslation(floorTiles[i]);
-			multScale(vec3(1, 1.0, 1));
 
 			uploadModelView();
+			gl.uniform3fv(color, floorTileColors[i]);
 			CUBE.draw(gl, program, drawingMode);
 		popMatrix();
 	}
@@ -235,31 +234,98 @@ function Hull() {
 		gl.uniform3fv(color, GREENS[0]);
     	CUBE.draw(gl, program, drawingMode);
 	popMatrix();
+	gl.uniform3fv(color, GREENS[4]);
 	pushMatrix();
 		multTranslation(vec3(0.0, HULL_HEIGHT/2 - 0.5, HULL_WIDTH/2 + 0.25));
 		multScale(vec3(HULL_LENGTH, 1.0, 0.5));
 
 		uploadModelView();
-		gl.uniform3fv(color, GREENS[0]);
     	CUBE.draw(gl, program, drawingMode);
+	popMatrix();
+	pushMatrix();
+		multTranslation(vec3(HULL_LENGTH/2, HULL_HEIGHT/2 - 0.75, HULL_WIDTH/2 + 0.25));
+		multRotationZ(-45);
+		multScale(vec3(1.0, 1.0, 0.5));
+
+		uploadModelView();
+		CUBE.draw(gl, program, drawingMode);
+	popMatrix();
+	pushMatrix();
+		multTranslation(vec3(HULL_LENGTH/2, HULL_HEIGHT/2 - 0.75, -HULL_WIDTH/2 - 0.25));
+		multRotationZ(-45);
+		multScale(vec3(1.0, 1.0, 0.5));
+
+		uploadModelView();
+		CUBE.draw(gl, program, drawingMode);
+	popMatrix();
+	pushMatrix();
+		multTranslation(vec3(-HULL_LENGTH/2, HULL_HEIGHT/2 - 0.75, HULL_WIDTH/2 + 0.25));
+		multRotationZ(45);
+		multScale(vec3(1.0, 1.0, 0.5));
+
+		uploadModelView();
+		CUBE.draw(gl, program, drawingMode);
+	popMatrix();
+	pushMatrix();
+		multTranslation(vec3(-HULL_LENGTH/2, HULL_HEIGHT/2 - 0.75, -HULL_WIDTH/2 - 0.25));
+		multRotationZ(45);
+		multScale(vec3(1.0, 1.0, 0.5));
+
+		uploadModelView();
+		CUBE.draw(gl, program, drawingMode);
 	popMatrix();
 	pushMatrix();
 		multTranslation(vec3(0.0, HULL_HEIGHT/2 - 0.5, -HULL_WIDTH/2 - 0.25));
 		multScale(vec3(HULL_LENGTH, 1.0, 0.5));
 
 		uploadModelView();
-		gl.uniform3fv(color, GREENS[0]);
     	CUBE.draw(gl, program, drawingMode);
 	popMatrix();
 	pushMatrix();
 		multTranslation(vec3(HULL_LENGTH/2, 0.0, 0.0));	
-		multRotationZ(45);
 		let scale = Math.sqrt(Math.pow(HULL_HEIGHT, 2.0)/2);
 		multScale(vec3(scale, scale, HULL_WIDTH*0.99));
-
+		multRotationZ(45);
+		
 		uploadModelView();
 		gl.uniform3fv(color, GREENS[1]);
     	CUBE.draw(gl, program, drawingMode);
+	popMatrix();
+	pushMatrix();
+		multTranslation(vec3(-HULL_LENGTH/2 - 0.5, HULL_HEIGHT/4, HULL_WIDTH/4));	
+		multScale(vec3(1.0, 1.0, 1.5));
+		multRotationX(90);
+
+		uploadModelView();
+		gl.uniform3fv(color, GREYS[2]);
+    	CYLINDER.draw(gl, program, drawingMode);
+	popMatrix();
+	pushMatrix();
+		multTranslation(vec3(-HULL_LENGTH/2 - 0.5, HULL_HEIGHT/4, -HULL_WIDTH/4));	
+		multScale(vec3(1.0, 1.0, 1.5));
+		multRotationX(90);
+
+		uploadModelView();
+		gl.uniform3fv(color, GREYS[2]);
+    	CYLINDER.draw(gl, program, drawingMode);
+	popMatrix();
+	pushMatrix();
+		multTranslation(vec3(-HULL_LENGTH/2, -HULL_HEIGHT/4, HULL_WIDTH/4));	
+		multScale(vec3(0.5, 0.5, 0.5));
+		multRotationZ(90);
+
+		uploadModelView();
+		gl.uniform3fv(color, GREYS[2]);
+    	TORUS.draw(gl, program, drawingMode);
+	popMatrix();
+	pushMatrix();
+		multTranslation(vec3(-HULL_LENGTH/2, -HULL_HEIGHT/4, -HULL_WIDTH/4));	
+		multScale(vec3(0.5, 0.5, 0.5));
+		multRotationZ(90);
+
+		uploadModelView();
+		gl.uniform3fv(color, GREYS[2]);
+    	TORUS.draw(gl, program, drawingMode);
 	popMatrix();
 }
 
@@ -276,32 +342,36 @@ function Turret() {
 		multScale(vec3(1.25, 1.0, 1.25));
 
 		uploadModelView();
-		gl.uniform3fv(color, GREYS[1]);
+		gl.uniform3fv(color, GREYS[2]);
     	TORUS.draw(gl, program, drawingMode);
 	popMatrix();
+	multTranslation(vec3(0.0, -0.1, 0.0));
 	pushMatrix();
 		multTranslation(vec3(-TURRET_LENGTH/2, 0.0, 0.0));
-		multScale(vec3(1.25, TURRET_HEIGHT, TURRET_WIDTH));
+		multRotationZ(-20);
+		multScale(vec3(0.75, TURRET_HEIGHT, TURRET_WIDTH));
 
 		uploadModelView();
 		gl.uniform3fv(color, GREENS[1]);
-    	PYRAMID.draw(gl, program, drawingMode);
+    	CUBE.draw(gl, program, drawingMode);
 	popMatrix();
 	pushMatrix();
 		multTranslation(vec3(0.0, 0.0, TURRET_WIDTH/2));
-		multScale(vec3(TURRET_LENGTH, TURRET_HEIGHT, 1.0));
+		multRotationX(-20);
+		multScale(vec3(TURRET_LENGTH, TURRET_HEIGHT, 0.75));
 
 		uploadModelView();
 		gl.uniform3fv(color, GREENS[1]);
-    	PYRAMID.draw(gl, program, drawingMode);
+    	CUBE.draw(gl, program, drawingMode);
 	popMatrix();
 	pushMatrix();
 		multTranslation(vec3(0.0, 0.0, -TURRET_WIDTH/2));
-		multScale(vec3(TURRET_LENGTH, TURRET_HEIGHT, 1.0));
+		multRotationX(20);
+		multScale(vec3(TURRET_LENGTH, TURRET_HEIGHT, 0.75));
 
 		uploadModelView();
 		gl.uniform3fv(color, GREENS[1]);
-    	PYRAMID.draw(gl, program, drawingMode);
+    	CUBE.draw(gl, program, drawingMode);
 	popMatrix();
 }
 
@@ -315,14 +385,14 @@ function Gun() {
 		multScale(vec3(GUN_RADIUS*1.5, GUN_LENGTH/4.0, GUN_RADIUS*1.5));
 
 		uploadModelView();
-		gl.uniform3fv(color, GREENS[1]);
+		gl.uniform3fv(color, GREENS[4]);
 		CYLINDER.draw(gl, program, drawingMode);
 	popMatrix();
 	pushMatrix();
 		multTranslation(vec3(0, GUN_LENGTH/2, 0));
 
 		uploadModelView();
-		gl.uniform3fv(color, GREYS[1]);
+		gl.uniform3fv(color, GREYS[2]);
 		SPHERE.draw(gl, program, drawingMode);
 	popMatrix();
 	pushMatrix();
@@ -337,7 +407,7 @@ function Gun() {
 		multScale(vec3(GUN_RADIUS, 1.0, GUN_RADIUS));
 
 		uploadModelView();
-		gl.uniform3fv(color, GREENS[1]);
+		gl.uniform3fv(color, GREENS[4]);
 		TORUS.draw(gl, program, drawingMode);
 	popMatrix();
 }
@@ -537,12 +607,12 @@ function checkPressedKeys() {
 				break;
 			case '+':
 				if (vpDistance > 10.0) {
-					vpDistance -= 1.0;
+					vpDistance -= ZOOM_INCREMENT;
 				}
 				break;
 			case '-':
 				if (vpDistance < 25.0) {
-					vpDistance += 1.0;
+					vpDistance += ZOOM_INCREMENT;
 				}
 				break;
 		}
@@ -560,4 +630,10 @@ function checkPressedKeys() {
 
 function distance(point1, point2) {
 	return Math.hypot(Math.abs(point1[0] - point2[0]), Math.abs(point1[1] - point2[1]), Math.abs(point1[2] - point2[2]));
+}
+
+function generateTargets() {
+	for (let i = 0; i < 5; i++) {
+		targets.push(new Target(vec3(-10.0 + 4.0 * i, 2.0, -30.0)));
+	}
 }
