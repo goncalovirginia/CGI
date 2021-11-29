@@ -21,7 +21,7 @@ let color;
 
 let pressedKeys = [];
 
-let floorTiles = [];
+let floorTileCoordinates = [];
 let floorTileColors = [];
 
 let tankX = 0;
@@ -33,7 +33,7 @@ let gunAngle = 0;
 let wheelAngle = 0;
 
 let projectileCoordinates = [];
-let projectileVectors = [];
+let projectileVelocityVectors = [];
 let firedProjectile = false;
 
 const ACCELERATION = 0.01;
@@ -184,16 +184,16 @@ function uploadModelView() {
 function generateFloor() {
 	for (let i = -25; i < 25; i += 1) {
 		for (let j = -25; j < 25; j += 1) {
-			floorTiles.push(vec3(i, -0.5, j));
+			floorTileCoordinates.push(vec3(i, -0.5, j));
 			floorTileColors.push(vec3(0.25 + Math.random() * 0.01, 0.08 + Math.random() * 0.01, 0.0));
 		}
 	}
 }
 
 function Floor() {
-	for (let i = 0; i < floorTiles.length; i++) {
+	for (let i = 0; i < floorTileCoordinates.length; i++) {
 		pushMatrix();
-			multTranslation(floorTiles[i]);
+			multTranslation(floorTileCoordinates[i]);
 
 			uploadModelView();
 			gl.uniform3fv(color, floorTileColors[i]);
@@ -484,7 +484,7 @@ function addProjectile() {
 	coordinates[2] += vector[2] * (TURRET_LENGTH/2 + GUN_LENGTH);
 
 	projectileCoordinates.push(coordinates);
-	projectileVectors.push(vector);
+	projectileVelocityVectors.push(vector);
 }
 
 function Projectiles() {
@@ -510,14 +510,14 @@ function updateProjectiles() {
 	for (let i = 0; i < projectileCoordinates.length; i++) {
 		if (projectileCoordinates[i][1] < 0.0) {
 			projectileCoordinates.splice(i, 1);
-			projectileVectors.splice(i, 1);
+			projectileVelocityVectors.splice(i, 1);
 			continue;
 		} 
 
 		for (let j = 0; j < 3; j++) {
-			projectileCoordinates[i][j] += projectileVectors[i][j];
+			projectileCoordinates[i][j] += projectileVelocityVectors[i][j];
 		}
-		projectileVectors[i][1] -= PROJECTILE_GRAVITY;
+		projectileVelocityVectors[i][1] -= PROJECTILE_GRAVITY;
 
 		for (let target of targets) {
 			target.checkHit(projectileCoordinates[i]);
