@@ -6,7 +6,7 @@ import * as dat from '../../libs/dat.gui.module.js';
 
 import * as CUBE from '../../libs/cube.js';
 import * as SPHERE from '../../libs/sphere.js';
-import * as TORUS from '../../libs/torus.js';
+import * as CYLINDER from '../../libs/torus.js';
 
 import * as STACK from '../../libs/stack.js';
 
@@ -50,9 +50,9 @@ function setup(shaders) {
     const gui = new dat.GUI();
 
     const optionsGui = gui.addFolder("options");
-    optionsGui.add(options, "backfaceculling").name("backface culling").onChange(()=> {
+    optionsGui.add(options, "backfaceculling").name("backface culling");/*.onChange(()=> {
         options.backfaceculling?gl.enable(gl.CULL_FACE):gl.disable(gl.CULL_FACE);
-    });
+    });*/
     optionsGui.add(options, "depthtest").name("depth test").onChange(()=> {
         options.depthtest?gl.enable(gl.DEPTH_TEST): gl.disable(gl.DEPTH_TEST);
     });
@@ -108,6 +108,7 @@ function setup(shaders) {
 
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     //options.depthtest?gl.enable(gl.DEPTH_TEST): gl.disable(gl.DEPTH_TEST);
+    gl.enable(gl.CULL_FACE);
 
     resizeCanvasToFullWindow();
 
@@ -122,6 +123,8 @@ function setup(shaders) {
 
 
     window.requestAnimationFrame(render);
+
+    
 
     function resizeCanvasToFullWindow()
     {
@@ -155,8 +158,10 @@ function setup(shaders) {
         gl.uniformMatrix4fv(gl.getUniformLocation(program, "mModelView"), false, flatten(STACK.modelView()));
         gl.uniformMatrix4fv(gl.getUniformLocation(program, "mProjection"), false, flatten(mProjection));
         gl.uniformMatrix4fv(gl.getUniformLocation(program, "mNormals"), false, flatten(normalMatrix(STACK.modelView())));
+        gl.uniformMatrix4fv(gl.getUniformLocation(program, "mView"),false, flatten(lookAt(camera.eye, camera.at, camera.up)));
 
         gl.uniform1i(gl.getUniformLocation(program, "uUseNormals"), options.normals);
+
 
         //SPHERE.draw(gl, program, options.wireframe ? gl.LINES : gl.TRIANGLES);
        // CUBE.draw(gl, program, gl.LINES);
@@ -176,7 +181,7 @@ function setup(shaders) {
         uploadModelView();
         CUBE.draw(gl, program, gl.TRIANGLES);
         popMatrix();
-        
+
         //LUZ - NAO SEI COMO LIGAR ISTO A OPCAO SHOW LIGHTS DENTRO DO INTERFACE
         pushMatrix();
         multTranslation(light.position);
@@ -184,6 +189,9 @@ function setup(shaders) {
         uploadModelView();
         SPHERE.draw(gl, program, gl.LINES);
         popMatrix();
+        
+        gl.uniformMatrix4fv(gl.getUniformLocation(program, "lightPosition"),false,flatten(light.position));
+        
     }
 }
 
