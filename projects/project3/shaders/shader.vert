@@ -1,6 +1,5 @@
-uniform vec4 lightPosition;
 
-const vec3 materialAmb = vec3(1.0, 0.0, 0.0);
+const vec3 materialAmb = vec3(1.0, 1.0, 0.0);
 const vec3 materialDif = vec3(1.0, 0.0, 0.0);
 const vec3 materialSpe = vec3(1.0, 1.0, 1.0);
 const float shininess = 6.0;
@@ -26,11 +25,15 @@ varying vec4 fColor;
 attribute vec4 vPosition;
 attribute vec4 vNormal;
 
+uniform vec3 color;
+uniform vec3 u_lightWorldPosition;
+
 
 void main()
 {
     vec3 L=vec3(1.0,1.0,1.0); // Normalized vector pointing to light at vertex
 
+    vec4 lightPosition = vec4(u_lightWorldPosition, 1.0);
     //////////////TIRADO DOS SLIDES////////
     vec3 posC = (mModelView * vPosition).xyz;
 
@@ -59,5 +62,5 @@ void main()
         specular = vec3(0.0, 0.0, 0.0);
     }
     gl_Position = mProjection * mModelView * vPosition;
-    fColor = vec4(ambientColor + diffuse + specular, 1.0);
+    fColor = vec4(color + diffuse + specular, 1.0);
 }

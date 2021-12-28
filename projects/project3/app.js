@@ -14,6 +14,8 @@ function setup(shaders) {
     const canvas = document.getElementById('gl-canvas');
     const gl = setupWebGL(canvas);
 
+    let color;
+
     CUBE.init(gl);
     SPHERE.init(gl);
 
@@ -50,9 +52,9 @@ function setup(shaders) {
     const gui = new dat.GUI();
 
     const optionsGui = gui.addFolder("options");
-    optionsGui.add(options, "backfaceculling").name("backface culling");/*.onChange(()=> {
+    optionsGui.add(options, "backfaceculling").name("backface culling").onChange(()=> {
         options.backfaceculling?gl.enable(gl.CULL_FACE):gl.disable(gl.CULL_FACE);
-    });*/
+    });
     optionsGui.add(options, "depthtest").name("depth test").onChange(()=> {
         options.depthtest?gl.enable(gl.DEPTH_TEST): gl.disable(gl.DEPTH_TEST);
     });
@@ -93,6 +95,7 @@ function setup(shaders) {
     position.add(light.position, 0).step(0.05).name("x");
     position.add(light.position, 1).step(0.05).name("y");
     position.add(light.position, 2).step(0.05).name("z");
+    
 
     lightGui.add(light, "ambient").min(0.1).max(75);
     lightGui.add(light,"diffuse").min(0.1).max(175);
@@ -105,6 +108,9 @@ function setup(shaders) {
 
     // matrices
     let mView, mProjection;
+
+    var lightWorldPositionLocation = gl.getUniformLocation(program, "u_lightWorldPosition");
+    color = gl.getUniformLocation(program, "color");
 
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     //options.depthtest?gl.enable(gl.DEPTH_TEST): gl.disable(gl.DEPTH_TEST);
@@ -154,24 +160,19 @@ function setup(shaders) {
 
         mProjection = perspective(camera.fovy, camera.aspect, camera.near, camera.far);
 
-
         gl.uniformMatrix4fv(gl.getUniformLocation(program, "mModelView"), false, flatten(STACK.modelView()));
         gl.uniformMatrix4fv(gl.getUniformLocation(program, "mProjection"), false, flatten(mProjection));
         gl.uniformMatrix4fv(gl.getUniformLocation(program, "mNormals"), false, flatten(normalMatrix(STACK.modelView())));
         gl.uniformMatrix4fv(gl.getUniformLocation(program, "mView"),false, flatten(lookAt(camera.eye, camera.at, camera.up)));
 
         gl.uniform1i(gl.getUniformLocation(program, "uUseNormals"), options.normals);
-
-
-        //SPHERE.draw(gl, program, options.wireframe ? gl.LINES : gl.TRIANGLES);
-       // CUBE.draw(gl, program, gl.LINES);
-
         //DESENHAR UM CUBO DEFORMADO NUM PARALELEPIPEDO COM AS DIMENSOES DE 3 X 0.1 X 3 TRANSFORMADO DE FORMA A QUE A FACE SUPERIOR FIQUE EM Y=-0.5
           //////////////////
         pushMatrix();   
         multTranslation([0,-.7,0]);
         multScale([3,0.1,3]);
         uploadModelView();
+        gl.uniform3fv(color, vec3(0.1, 0.1, 0.1));
         CUBE.draw(gl, program, gl.TRIANGLES);
         popMatrix();
           /////////////////
@@ -179,7 +180,8 @@ function setup(shaders) {
           //OBJECTO ELEMENTAR  - NESTE CASO UMA ESFERA
         pushMatrix();
         uploadModelView();
-        CUBE.draw(gl, program, gl.TRIANGLES);
+        gl.uniform3fv(color, vec3(0.5, 0.5, 0.5));
+        SPHERE.draw(gl, program, gl.TRIANGLES);
         popMatrix();
 
         //LUZ - NAO SEI COMO LIGAR ISTO A OPCAO SHOW LIGHTS DENTRO DO INTERFACE
@@ -187,10 +189,11 @@ function setup(shaders) {
         multTranslation(light.position);
         multScale([0.1,0.1,0.1]);
         uploadModelView();
+        gl.uniform3fv(color, vec3(1.0, 1.0, 1.0));
         SPHERE.draw(gl, program, gl.LINES);
         popMatrix();
+        gl.uniform3fv(lightWorldPositionLocation, vec3(light.position));
         
-        gl.uniformMatrix4fv(gl.getUniformLocation(program, "lightPosition"),false,flatten(light.position));
         
     }
 }
