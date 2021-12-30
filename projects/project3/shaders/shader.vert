@@ -1,4 +1,4 @@
-
+/*
 uniform vec3 materialAmb;   //Ka
 uniform vec3 materialDif;   //Kd
 uniform vec3 materialSpe;
@@ -10,7 +10,7 @@ const vec3 lightSpe = vec3(1.0, 1.0, 1.0);
 
 vec3 ambientColor = uAmbient * materialAmb;
 vec3 diffuseColor = lightDif * materialDif;
-vec3 specularColor = lightSpe * materialSpe;
+vec3 specularColor = lightSpe * materialSpe;*/
 
 uniform mat4 mProjection;
 uniform mat4 mModelView;
@@ -19,6 +19,8 @@ uniform mat4 mViewNormals;
 uniform mat4 mNormals;
 
 varying vec3 fNormal;
+varying vec3 fLight;
+varying vec3 fViewer;
 
 varying vec4 fColor;
 
@@ -29,12 +31,11 @@ attribute vec4 vNormal;
 uniform vec3 u_lightWorldPosition;
 
 
+
 void main()
 {
-    
-    vec3 L; // Normalized vector pointing to light at vertex
-
     vec4 lightPosition = vec4(u_lightWorldPosition, 1.0);
+    /*vec3 L; // Normalized vector pointing to light at vertex
     //////////////TIRADO DOS SLIDES////////
     vec3 posC = (mModelView * vPosition).xyz;
 
@@ -65,5 +66,20 @@ void main()
     gl_Position = mProjection * mModelView * vPosition;
     
     //vec3 c = fNormal + vec3(1.0, 1.0, 1.0);
-    fColor = vec4(ambientColor + diffuse + specular, 1.0);
+    fColor = vec4(ambientColor + diffuse + specular, 1.0);*/
+
+    // compute position in camera frame
+    vec3 posC = (mModelView * vPosition).xyz;
+    // compute normal in camera frame
+    fNormal = (mNormals * vNormal).xyz;
+    // compute light vector in camera frame
+    if(lightPosition.w == 0.0)
+    fLight = normalize((mViewNormals * lightPosition).xyz);
+    else
+    fLight = normalize((mView*lightPosition).xyz - posC);
+    // Compute the view vector
+    // fViewer = -posC; // Perspective projection
+    fViewer = vec3(0,0,1); // Parallel projection only
+    // Compute vertex position in clip coordinates (as usual)
+    gl_Position = mProjection * mModelView * vPosition;
 }
