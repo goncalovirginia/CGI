@@ -6,7 +6,9 @@ import * as dat from '../../libs/dat.gui.module.js';
 
 import * as CUBE from '../../libs/cube.js';
 import * as SPHERE from '../../libs/sphere.js';
-import * as CYLINDER from '../../libs/torus.js';
+import * as CYLINDER from '../../libs/cylinder.js';
+import * as TORUS from '../../libs/torus.js';
+import * as PYRAMID from '../../libs/pyramid.js';
 
 import * as STACK from '../../libs/stack.js';
 
@@ -14,10 +16,13 @@ function setup(shaders) {
     const canvas = document.getElementById('gl-canvas');
     const gl = setupWebGL(canvas);
 
-    let color;
+    //let color;
 
     CUBE.init(gl);
     SPHERE.init(gl);
+    TORUS.init(gl);
+    PYRAMID.init(gl);
+    CYLINDER.init(gl);
 
     const program = buildProgramFromSources(gl, shaders['shader.vert'], shaders['shader.frag']);
 
@@ -40,13 +45,22 @@ function setup(shaders) {
     }
 
     let light = {
-        position : vec3(0,0,0),
-        ambient: 75,
-        diffuse: 175,
-        specular:225,
+        position : vec3(1.0,1.0,0),
+        ambient: [131,77,148],
+        diffuse: [62,117,12],
+        specular:[153,21,116],
         directional: false,
         active: true
     }
+
+    let material = {
+        ambience:[134,50,150],
+        diffuse: [40,146,134],
+        specular:[76,11,138],
+        objectDrawn: "Sphere",
+        shininess: 6.0
+    }
+
 
 
     const gui = new dat.GUI();
@@ -97,20 +111,45 @@ function setup(shaders) {
     position.add(light.position, 2).step(0.05).name("z");
     
 
-    lightGui.add(light, "ambient").min(0.1).max(75);
-    lightGui.add(light,"diffuse").min(0.1).max(175);
-    lightGui.add(light,"specular").min(0.1).max(255);
+    lightGui.addColor(light, "ambient").onChange((val) =>{
+        light.ambient=val;
+    });
+    lightGui.addColor(light,"diffuse").onChange((val)=>{
+        light.diffuse=val;
+    });
+    lightGui.addColor(light,"specular").onChange((val)=>{
+        light.specular=val;
+    });
 
     lightGui.add(light, "directional");
     lightGui.add(light, "active");
 
+    const gui2 = new dat.GUI();
+    const materialGui = gui2.addFolder("material");
+    materialGui.add(material,"objectDrawn", ["Cube","Sphere", "Cylinder", "Torus", "Pyramid"]).onChange(function(value){
+        material.objectDrawn = value;
+    });
+    materialGui.addColor(material, "ambience").onChange((val)=>{
+        material.ambience=val;
+    });
+    
+    materialGui.addColor(material, "diffuse").onChange((val)=>{
+        material.diffuse=val;
+    });
+    materialGui.addColor(material, "specular").onChange((val)=>{
+        material.specular=val;
+    });
+    materialGui.add(material, "shininess").min(0.1).max(30.0).onChange((val)=>{
+        material.shininess=val;
+    });
+    
     
 
     // matrices
     let mView, mProjection;
 
     var lightWorldPositionLocation = gl.getUniformLocation(program, "u_lightWorldPosition");
-    color = gl.getUniformLocation(program, "color");
+    //color = gl.getUniformLocation(program, "color");
 
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     //options.depthtest?gl.enable(gl.DEPTH_TEST): gl.disable(gl.DEPTH_TEST);
@@ -166,13 +205,21 @@ function setup(shaders) {
         gl.uniformMatrix4fv(gl.getUniformLocation(program, "mView"),false, flatten(lookAt(camera.eye, camera.at, camera.up)));
 
         gl.uniform1i(gl.getUniformLocation(program, "uUseNormals"), options.normals);
-        //DESENHAR UM CUBO DEFORMADO NUM PARALELEPIPEDO COM AS DIMENSOES DE 3 X 0.1 X 3 TRANSFORMADO DE FORMA A QUE A FACE SUPERIOR FIQUE EM Y=-0.5
+        gl.uniform3fv(gl.getUniformLocation(program, "uAmbient"),vec3((light.ambient[0])/255,(light.ambient[1])/255,(light.ambient[2])/255));
+        gl.uniform3fv(gl.getUniformLocation(program, "lightDif"),vec3((light.diffuse[0])/255,(light.diffuse[1]/255),(light.diffuse[2])/255));
+        gl.uniform3fv(gl.getUniformLocation(program, "lightSpe"),vec3((light.specular[0]/255),(light.specular[1]/255),(light.specular[2])/255));
+
+        gl.uniform3fv(gl.getUniformLocation(program, "materialAmb"),vec3((material.ambience[0])/255,(material.ambience[1])/255,(material.ambience[2])/255));
+        gl.uniform3fv(gl.getUniformLocation(program, "materialDif"),vec3((material.diffuse[0])/255,(material.diffuse[1]/255),(material.diffuse[2])/255));
+        gl.uniform3fv(gl.getUniformLocation(program, "materialSpe"),vec3((material.specular[0]/255),(material.specular[1]/255),(material.specular[2])/255));
+        gl.uniform1f(gl.getUniformLocation(program,"shininess"),material.shininess);
+
           //////////////////
         pushMatrix();   
         multTranslation([0,-.7,0]);
         multScale([3,0.1,3]);
         uploadModelView();
-        gl.uniform3fv(color, vec3(0.1, 0.1, 0.1));
+        //gl.uniform3fv(color, vec3(0.1, 0.1, 0.1));
         CUBE.draw(gl, program, gl.TRIANGLES);
         popMatrix();
           /////////////////
@@ -180,8 +227,26 @@ function setup(shaders) {
           //OBJECTO ELEMENTAR  - NESTE CASO UMA ESFERA
         pushMatrix();
         uploadModelView();
-        gl.uniform3fv(color, vec3(0.5, 0.5, 0.5));
-        SPHERE.draw(gl, program, gl.TRIANGLES);
+        //gl.uniform3fv(color, vec3(0.5, 0.5, 0.5));
+        switch(material.objectDrawn){
+            case "Sphere":
+                SPHERE.draw(gl, program, gl.TRIANGLES);
+                break;
+            case "Cube":
+                CUBE.draw(gl, program, gl.TRIANGLES);
+                break;
+            case "Torus":
+                TORUS.draw(gl, program, gl.TRIANGLES);
+                break;
+            case "Cylinder":
+                CYLINDER.draw(gl, program, gl.TRIANGLES);
+                break;
+            case "Pyramid":
+                PYRAMID.draw(gl, program, gl.TRIANGLES);
+                break;
+            default:
+                break;
+        }
         popMatrix();
 
         //LUZ - NAO SEI COMO LIGAR ISTO A OPCAO SHOW LIGHTS DENTRO DO INTERFACE
@@ -189,10 +254,11 @@ function setup(shaders) {
         multTranslation(light.position);
         multScale([0.1,0.1,0.1]);
         uploadModelView();
-        gl.uniform3fv(color, vec3(1.0, 1.0, 1.0));
+        //gl.uniform3fv(color, vec3(1.0, 1.0, 1.0));
         SPHERE.draw(gl, program, gl.LINES);
         popMatrix();
         gl.uniform3fv(lightWorldPositionLocation, vec3(light.position));
+        //gl.uniform3fv(color, vec3(1.0, 1.0, 1.0));
         
         
     }

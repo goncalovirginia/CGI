@@ -1,14 +1,14 @@
 
-const vec3 materialAmb = vec3(1.0, 1.0, 0.0);
-const vec3 materialDif = vec3(1.0, 0.0, 0.0);
-const vec3 materialSpe = vec3(1.0, 1.0, 1.0);
-const float shininess = 6.0;
+uniform vec3 materialAmb;   //Ka
+uniform vec3 materialDif;   //Kd
+uniform vec3 materialSpe;
+uniform float shininess;
 
-const vec3 lightAmb = vec3(0.2, 0.2, 0.2);
-const vec3 lightDif = vec3(0.7, 0.7, 0.7);
+uniform vec3 uAmbient;
+uniform vec3 lightDif;
 const vec3 lightSpe = vec3(1.0, 1.0, 1.0);
 
-vec3 ambientColor = lightAmb * materialAmb;
+vec3 ambientColor = uAmbient * materialAmb;
 vec3 diffuseColor = lightDif * materialDif;
 vec3 specularColor = lightSpe * materialSpe;
 
@@ -25,13 +25,14 @@ varying vec4 fColor;
 attribute vec4 vPosition;
 attribute vec4 vNormal;
 
-uniform vec3 color;
+//uniform vec3 color;
 uniform vec3 u_lightWorldPosition;
 
 
 void main()
 {
-    vec3 L=vec3(1.0,1.0,1.0); // Normalized vector pointing to light at vertex
+    
+    vec3 L; // Normalized vector pointing to light at vertex
 
     vec4 lightPosition = vec4(u_lightWorldPosition, 1.0);
     //////////////TIRADO DOS SLIDES////////
@@ -62,5 +63,7 @@ void main()
         specular = vec3(0.0, 0.0, 0.0);
     }
     gl_Position = mProjection * mModelView * vPosition;
-    fColor = vec4(color + diffuse + specular, 1.0);
+    
+    //vec3 c = fNormal + vec3(1.0, 1.0, 1.0);
+    fColor = vec4(ambientColor + diffuse + specular, 1.0);
 }
