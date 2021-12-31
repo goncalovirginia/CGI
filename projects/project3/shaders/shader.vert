@@ -8,7 +8,7 @@ uniform mat4 mViewNormals;
 uniform mat4 mNormals;
 
 varying vec3 fNormal;
-varying vec3 fLights[MAX_LIGHTS];
+varying vec3 fLight;
 varying vec3 fViewer;
 
 attribute vec4 vPosition;
