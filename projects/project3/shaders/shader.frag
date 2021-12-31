@@ -28,6 +28,7 @@ varying vec3 fLight;
 varying vec3 fViewer;
 varying vec3 fPosition;
 varying vec3 fNormal;
+varying mat4 fView;
 
 void main() {
     vec3 color = vec3(0, 0, 0);
@@ -44,7 +45,7 @@ void main() {
         vec3 diffuseColor = uLight[i].Id * uMaterial.Kd;
         vec3 specularColor = uLight[i].Is * uMaterial.Ks;
 
-        vec3 L = normalize(fLight);
+        vec3 L = normalize(normalize((fView*vec4(uLight[i].pos, 1.0)).xyz + fViewer));
         vec3 V = normalize(fViewer);
         vec3 N = normalize(fNormal);
         vec3 H = normalize(L + V);

@@ -1,6 +1,4 @@
 
-const int MAX_LIGHTS = 8;
-
 uniform mat4 mProjection;
 uniform mat4 mModelView;
 uniform mat4 mView;
@@ -10,6 +8,7 @@ uniform mat4 mNormals;
 varying vec3 fNormal;
 varying vec3 fLight;
 varying vec3 fViewer;
+varying mat4 fView;
 
 attribute vec4 vPosition;
 attribute vec4 vNormal;
@@ -23,6 +22,7 @@ void main() {
     fNormal = (mNormals * vNormal).xyz;
     fLight = normalize((mView*lightPosition).xyz - posC);
     fViewer = -posC; 
+    fView = mView;
 
     gl_Position = mProjection * mModelView * vPosition;
 }

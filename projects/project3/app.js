@@ -15,7 +15,7 @@ import * as STACK from '../../libs/stack.js';
 class Light {
 
     constructor() {
-        this.position = vec3(1, 2, -1);
+        this.position = vec3(1, 1, -1);
         this.ambient = vec3(0, 0, 0);
         this.diffuse = vec3(100, 0, 0);
         this.specular = vec3(255, 0, 0);
@@ -69,6 +69,11 @@ function setup(shaders) {
     let lights = [];
 
     lights.push(new Light());
+
+    lights.push(new Light());
+    lights[1].position = vec3(-1, 1, 0);
+    lights[1].diffuse = vec3(0, 0, 100);
+    lights[1].specular = vec3(0, 0, 255);
 
     let material = {
         ambient: vec3(255, 255, 255),
@@ -126,7 +131,7 @@ function setup(shaders) {
 
     const lightGui = gui.addFolder("light");
 
-	let lightNumbers = [0];
+	let lightNumbers = [0, 1];
 
 	let addLight = { 
 		add: function() {
@@ -136,43 +141,82 @@ function setup(shaders) {
 
 			lights.push(new Light());
 			lightNumbers.push(lightNumbers.length);
-			lightNumbersGui = lightNumbersGui.options(lightNumbers);
+
+			lightNumbersGui = lightNumbersGui.options(lightNumbers).onChange(function(value) {
+                selectedLight.number = value;
+
+                x = x.setValue(lights[selectedLight.number].position[0]).step(0.05).name("x").onChange((val) => {
+                    lights[selectedLight.number].position[0] = val;
+                });
+            
+                y = y.setValue(lights[selectedLight.number].position[1]).step(0.05).name("y").onChange((val) => {
+                    lights[selectedLight.number].position[1] = val;
+                });
+            
+                z = z.setValue(lights[selectedLight.number].position[2]).step(0.05).name("z").onChange((val) => {
+                    lights[selectedLight.number].position[2] = val;
+                });
+                
+                ambient = ambient.setValue(lights[selectedLight.number].ambient).onChange((val) => {
+                    lights[selectedLight.number].ambient = val;
+                });
+            
+                diffuse = diffuse.setValue(lights[selectedLight.number].diffuse).onChange((val) => {
+                    lights[selectedLight.number].diffuse= val;
+                });
+            
+                specular = specular.setValue(lights[selectedLight.number].specular).onChange((val) => {
+                    lights[selectedLight.number].specular = val;
+                });
+            
+                directional = directional.setValue(lights[selectedLight.number].directional).onChange((val) => {
+                    lights[selectedLight.number].directional = val;
+                });
+            
+                active = active.setValue(lights[selectedLight.number].active).onChange((val) => {
+                    lights[selectedLight.number].active = val;
+                });
+            });
 		}
 	};
 
 	lightGui.add(addLight, "add");
 
 	let lightNumbersGui = lightGui.add(selectedLight, "number", lightNumbers).onChange(function(value) {
-        selectedLight = value;
-
-		for (var i in gui.__controllers) {
-			gui.__controllers[i].updateDisplay();
-		}
+        selectedLight.number = value;
     });
 
     const position = lightGui.addFolder("position");
 
-    position.add(lights[selectedLight.number].position, 0).step(0.05).name("x");
-    position.add(lights[selectedLight.number].position, 1).step(0.05).name("y");
-    position.add(lights[selectedLight.number].position, 2).step(0.05).name("z");
+    let x = position.add(lights[selectedLight.number].position, 0).step(0.05).name("x").onChange((val) => {
+        lights[selectedLight.number].position[0] = val;
+    });
+
+    let y = position.add(lights[selectedLight.number].position, 1).step(0.05).name("y").onChange((val) => {
+        lights[selectedLight.number].position[1] = val;
+    });
+
+    let z = position.add(lights[selectedLight.number].position, 2).step(0.05).name("z").onChange((val) => {
+        lights[selectedLight.number].position[2] = val;
+    });
     
-    lightGui.addColor(lights[selectedLight.number], "ambient").onChange((val) => {
+    let ambient = lightGui.addColor(lights[selectedLight.number], "ambient").onChange((val) => {
         lights[selectedLight.number].ambient = val;
     });
 
-    lightGui.addColor(lights[selectedLight.number], "diffuse").onChange((val) => {
+    let diffuse = lightGui.addColor(lights[selectedLight.number], "diffuse").onChange((val) => {
         lights[selectedLight.number].diffuse= val;
     });
 
-    lightGui.addColor(lights[selectedLight.number], "specular").onChange((val) => {
+    let specular = lightGui.addColor(lights[selectedLight.number], "specular").onChange((val) => {
         lights[selectedLight.number].specular = val;
     });
 
-    lightGui.add(lights[selectedLight.number], "directional").onChange((val) => {
+    let directional = lightGui.add(lights[selectedLight.number], "directional").onChange((val) => {
         lights[selectedLight.number].directional = val;
     });
 
-    lightGui.add(lights[selectedLight.number], "active").onChange((val) => {
+    let active = lightGui.add(lights[selectedLight.number], "active").onChange((val) => {
         lights[selectedLight.number].active = val;
     });
 
@@ -298,14 +342,13 @@ function setup(shaders) {
 		gl.useProgram(lightProgram);
 
 		for (let i = 0; i < lights.length; i++) {
-			gl.uniform3fv(gl.getUniformLocation(lightProgram, "u_lightWorldPosition"), lights[i].position);
 			gl.uniform3fv(gl.getUniformLocation(lightProgram, "uColor"), lights[i].specular);
 
 	        pushMatrix();
     	    	multTranslation(lights[i].position);
             	multScale(vec3(0.1, 0.1, 0.1));
             	uploadModelView(lightProgram);
-        		SPHERE.draw(gl, lightProgram, gl.TRIANGLES);
+        		SPHERE.draw(gl, lightProgram, gl.LINES);
         	popMatrix();
 		}
     }
