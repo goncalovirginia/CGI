@@ -1,46 +1,66 @@
-/*precision highp float;
 
-uniform bool uUseNormals;
-varying vec3 fNormal;
+precision highp float;
 
-varying vec4 fColor;
+const int MAX_LIGHTS = 8;
 
-void main()
-{
-    gl_FragColor = fColor;
-}*/
-precision mediump float;
+struct LightInfo {
+    vec3 pos;
+    vec3 Ia;
+    vec3 Id;
+    vec3 Is;
+    bool isDirectional;
+    bool isActive;
+};
 
-varying vec3 fPosition;
-varying vec3 fNormal;
+struct MaterialInfo {
+    vec3 Ka;
+    vec3 Kd;
+    vec3 Ks;
+    float shininess;
+};
 
-uniform vec3 materialAmb;   //Ka
-uniform vec3 materialDif;   //Kd
-uniform vec3 materialSpe;
-uniform float shininess;
+uniform LightInfo uLight[MAX_LIGHTS]; 
+uniform MaterialInfo uMaterial; 
 
-uniform vec3 uAmbient;
-uniform vec3 lightDif;
-const vec3 lightSpe = vec3(1.0, 1.0, 1.0);
-
-vec3 ambientColor = uAmbient * materialAmb;
-vec3 diffuseColor = lightDif * materialDif;
-vec3 specularColor = lightSpe * materialSpe;
+uniform int uNumLights;
 
 varying vec3 fLight;
 varying vec3 fViewer;
+varying vec3 fPosition;
+varying vec3 fNormal;
 
 void main() {
-    vec3 L = normalize(fLight);
-    vec3 V = normalize(fViewer);
-    vec3 N = normalize(fNormal);
-    vec3 H = normalize(L+V);
-    float diffuseFactor = max( dot(L,N), 0.0 );
-    vec3 diffuse = diffuseFactor * diffuseColor;
-    float specularFactor = pow(max(dot(N,H), 0.0), shininess);
-    vec3 specular = specularFactor * specularColor;
-    if( dot(L,N) < 0.0 ) {
-    specular = vec3(0.0, 0.0, 0.0);
+    vec3 color = vec3(0, 0, 0);
+
+    for (int i = 0; i < MAX_LIGHTS; i++) {
+        if (i >= uNumLights) {
+            break;
+        }
+        if (!uLight[i].isActive) {
+            continue;
+        }
+
+        vec3 ambientColor = uLight[i].Ia * uMaterial.Ka;
+        vec3 diffuseColor = uLight[i].Id * uMaterial.Kd;
+        vec3 specularColor = uLight[i].Is * uMaterial.Ks;
+
+        vec3 L = normalize(fLight);
+        vec3 V = normalize(fViewer);
+        vec3 N = normalize(fNormal);
+        vec3 H = normalize(L + V);
+
+        float diffuseFactor = max(dot(L, N), 0.0);
+        vec3 diffuse = diffuseFactor * diffuseColor;
+
+        float specularFactor = pow(max(dot(N, H), 0.0), uMaterial.shininess);
+        vec3 specular = specularFactor * specularColor;
+
+        if (dot(L, N) < 0.0) {
+            specular = vec3(0.0, 0.0, 0.0);
+        }
+
+        color += ambientColor + diffuse + specular;
     }
-    gl_FragColor = vec4(ambientColor + diffuse + specular, 1.0);
+
+    gl_FragColor = vec4(color, 1.0);
 }

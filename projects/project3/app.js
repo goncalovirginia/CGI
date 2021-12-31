@@ -12,11 +12,32 @@ import * as PYRAMID from '../../libs/pyramid.js';
 
 import * as STACK from '../../libs/stack.js';
 
+class Light {
+
+    constructor() {
+        this.position = vec3(1, 2, -1);
+        this.ambient = vec3(0, 0, 0);
+        this.diffuse = vec3(100, 0, 0);
+        this.specular = vec3(255, 0, 0);
+        this.directional = false;
+        this.active = true;
+    }
+
+}
+
+const urls = ['shader.vert', 'shader.frag', 'shader2.frag'];
+
+loadShadersFromURLS(urls).then( shaders => setup(shaders));
+
 function setup(shaders) {
     const canvas = document.getElementById('gl-canvas');
     const gl = setupWebGL(canvas);
 
-    //let color;
+    const MAX_LIGHTS = 8;
+
+	let selectedLight = {
+		number: 0
+	}
 
     CUBE.init(gl);
     SPHERE.init(gl);
@@ -24,13 +45,14 @@ function setup(shaders) {
     PYRAMID.init(gl);
     CYLINDER.init(gl);
 
-    const program = buildProgramFromSources(gl, shaders['shader.vert'], shaders['shader.frag']);
-
-    // Camera  
+    const illuminationProgram = buildProgramFromSources(gl, shaders['shader.vert'], shaders['shader.frag']);
+	const lightProgram = buildProgramFromSources(gl, shaders['shader.vert'], shaders['shader2.frag']);
+    
+	// Camera  
     let camera = {
-        eye: vec3(0,0,5),
-        at: vec3(0,0,0),
-        up: vec3(0,1,0),
+        eye: vec3(0, 3, 4),
+        at: vec3(0, 0, 0),
+        up: vec3(0, 1, 0),
         fovy: 45,
         aspect: 1, // Updated further down
         near: 0.1,
@@ -44,41 +66,37 @@ function setup(shaders) {
         normals: true
     }
 
-    let light = {
-        position : vec3(1.0,1.0,0),
-        ambient: [131,77,148],
-        diffuse: [62,117,12],
-        specular:[153,21,116],
-        directional: false,
-        active: true
-    }
+    let lights = [];
+
+    lights.push(new Light());
 
     let material = {
-        ambience:[134,50,150],
-        diffuse: [40,146,134],
-        specular:[76,11,138],
-        objectDrawn: "Sphere",
-        shininess: 6.0
+        ambient: vec3(255, 255, 255),
+        diffuse: vec3(255, 255, 255),
+        specular: vec3(255, 255, 255),
+        objectDrawn: "Torus",
+        shininess: 20.0
     }
-
-
 
     const gui = new dat.GUI();
 
     const optionsGui = gui.addFolder("options");
-    optionsGui.add(options, "backfaceculling").name("backface culling").onChange(()=> {
-        options.backfaceculling?gl.enable(gl.CULL_FACE):gl.disable(gl.CULL_FACE);
-    });
-    optionsGui.add(options, "depthtest").name("depth test").onChange(()=> {
-        options.depthtest?gl.enable(gl.DEPTH_TEST): gl.disable(gl.DEPTH_TEST);
-    });
-    optionsGui.add(options, "showlights").name("show lights");
 
+    optionsGui.add(options, "backfaceculling").name("backface culling").onChange((val)=> {
+        options.backfaceculling =val;
+    });
+
+    optionsGui.add(options, "depthtest").name("depth test").onChange((val)=> {
+        options.depthtest = val;
+    });
+
+    optionsGui.add(options, "showlights").name("show lights").onChange((val) => {
+        options.showlights = val;
+    });
 
     const cameraGui = gui.addFolder("camera");
 
     cameraGui.add(camera, "fovy").min(1).max(100).step(1).listen();
-    //cameraGui.add(camera, "aspect").min(0).max(10).listen().domElement.style.pointerEvents = "none";
     
     cameraGui.add(camera, "near").min(0.1).max(20).onChange( function(v) {
         camera.near = Math.min(camera.far-0.5, v);
@@ -89,67 +107,101 @@ function setup(shaders) {
     });
 
     const eye = cameraGui.addFolder("eye");
-    eye.add(camera.eye, 0).step(0.05).name("x");//.domElement.style.pointerEvents = "none";;
-    eye.add(camera.eye, 1).step(0.05).name("y");//.domElement.style.pointerEvents = "none";;
-    eye.add(camera.eye, 2).step(0.05).name("z");//.domElement.style.pointerEvents = "none";;
+
+    eye.add(camera.eye, 0).step(0.05).name("x");
+    eye.add(camera.eye, 1).step(0.05).name("y");
+    eye.add(camera.eye, 2).step(0.05).name("z");
 
     const at = cameraGui.addFolder("at");
-    at.add(camera.at, 0).step(0.05).name("x");//.domElement.style.pointerEvents = "none";;
-    at.add(camera.at, 1).step(0.05).name("y");//.domElement.style.pointerEvents = "none";;
-    at.add(camera.at, 2).step(0.05).name("z");//.domElement.style.pointerEvents = "none";;
+
+    at.add(camera.at, 0).step(0.05).name("x");
+    at.add(camera.at, 1).step(0.05).name("y");
+    at.add(camera.at, 2).step(0.05).name("z");
 
     const up = cameraGui.addFolder("up");
-    up.add(camera.up, 0).step(0.05).name("x");//.domElement.style.pointerEvents = "none";;
-    up.add(camera.up, 1).step(0.05).name("y");//.domElement.style.pointerEvents = "none";;
-    up.add(camera.up, 2).step(0.05).name("z");//.domElement.style.pointerEvents = "none";;
+
+    up.add(camera.up, 0).step(0.05).name("x");
+    up.add(camera.up, 1).step(0.05).name("y");
+    up.add(camera.up, 2).step(0.05).name("z");
 
     const lightGui = gui.addFolder("light");
 
+	let lightNumbers = [0];
+
+	let addLight = { 
+		add: function() {
+			if (lights.length == MAX_LIGHTS) {
+				return;
+			}
+
+			lights.push(new Light());
+			lightNumbers.push(lightNumbers.length);
+			lightNumbersGui = lightNumbersGui.options(lightNumbers);
+		}
+	};
+
+	lightGui.add(addLight, "add");
+
+	let lightNumbersGui = lightGui.add(selectedLight, "number", lightNumbers).onChange(function(value) {
+        selectedLight = value;
+
+		for (var i in gui.__controllers) {
+			gui.__controllers[i].updateDisplay();
+		}
+    });
+
     const position = lightGui.addFolder("position");
-    position.add(light.position, 0).step(0.05).name("x");
-    position.add(light.position, 1).step(0.05).name("y");
-    position.add(light.position, 2).step(0.05).name("z");
+
+    position.add(lights[selectedLight.number].position, 0).step(0.05).name("x");
+    position.add(lights[selectedLight.number].position, 1).step(0.05).name("y");
+    position.add(lights[selectedLight.number].position, 2).step(0.05).name("z");
     
-
-    lightGui.addColor(light, "ambient").onChange((val) =>{
-        light.ambient=val;
-    });
-    lightGui.addColor(light,"diffuse").onChange((val)=>{
-        light.diffuse=val;
-    });
-    lightGui.addColor(light,"specular").onChange((val)=>{
-        light.specular=val;
+    lightGui.addColor(lights[selectedLight.number], "ambient").onChange((val) => {
+        lights[selectedLight.number].ambient = val;
     });
 
-    lightGui.add(light, "directional");
-    lightGui.add(light, "active");
+    lightGui.addColor(lights[selectedLight.number], "diffuse").onChange((val) => {
+        lights[selectedLight.number].diffuse= val;
+    });
+
+    lightGui.addColor(lights[selectedLight.number], "specular").onChange((val) => {
+        lights[selectedLight.number].specular = val;
+    });
+
+    lightGui.add(lights[selectedLight.number], "directional").onChange((val) => {
+        lights[selectedLight.number].directional = val;
+    });
+
+    lightGui.add(lights[selectedLight.number], "active").onChange((val) => {
+        lights[selectedLight.number].active = val;
+    });
 
     const gui2 = new dat.GUI();
+
     const materialGui = gui2.addFolder("material");
-    materialGui.add(material,"objectDrawn", ["Cube","Sphere", "Cylinder", "Torus", "Pyramid"]).onChange(function(value){
+
+    materialGui.add(material, "objectDrawn", ["Cube", "Sphere", "Cylinder", "Torus", "Pyramid"]).onChange(function(value){
         material.objectDrawn = value;
     });
-    materialGui.addColor(material, "ambience").onChange((val)=>{
-        material.ambience=val;
+
+    materialGui.addColor(material, "ambient").onChange((val)=>{
+        material.ambient=val;
     });
     
     materialGui.addColor(material, "diffuse").onChange((val)=>{
-        material.diffuse=val;
+        material.diffuse = val;
     });
+
     materialGui.addColor(material, "specular").onChange((val)=>{
         material.specular=val;
     });
+
     materialGui.add(material, "shininess").min(0.1).max(30.0).onChange((val)=>{
         material.shininess=val;
     });
-    
-    
 
     // matrices
     let mView, mProjection;
-
-    var lightWorldPositionLocation = gl.getUniformLocation(program, "u_lightWorldPosition");
-    //color = gl.getUniformLocation(program, "color");
 
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     //options.depthtest?gl.enable(gl.DEPTH_TEST): gl.disable(gl.DEPTH_TEST);
@@ -160,110 +212,105 @@ function setup(shaders) {
     window.addEventListener('resize', resizeCanvasToFullWindow);
 
     window.addEventListener('wheel', function(event) {
-
-        
         const factor = 1 - event.deltaY/1000;
         camera.fovy = Math.max(1, Math.min(100, camera.fovy * factor)); 
     });
 
-
     window.requestAnimationFrame(render);
 
-    
-
-    function resizeCanvasToFullWindow()
-    {
+    function resizeCanvasToFullWindow() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-
         camera.aspect = canvas.width / canvas.height;
-
         gl.viewport(0,0,canvas.width, canvas.height);
     }
 
-    function uploadModelView()
-    {
+    function uploadModelView(program) {
         gl.uniformMatrix4fv(gl.getUniformLocation(program, "mModelView"), false, flatten(modelView()));
     }
 
-    function render(time)
-    {
+    function render(time) {
         window.requestAnimationFrame(render);
 
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        gl.useProgram(program);
+        gl.useProgram(illuminationProgram);
 
         mView = lookAt(camera.eye, camera.at, camera.up);
         STACK.loadMatrix(mView);
 
         mProjection = perspective(camera.fovy, camera.aspect, camera.near, camera.far);
 
-        gl.uniformMatrix4fv(gl.getUniformLocation(program, "mModelView"), false, flatten(STACK.modelView()));
-        gl.uniformMatrix4fv(gl.getUniformLocation(program, "mProjection"), false, flatten(mProjection));
-        gl.uniformMatrix4fv(gl.getUniformLocation(program, "mNormals"), false, flatten(normalMatrix(STACK.modelView())));
-        gl.uniformMatrix4fv(gl.getUniformLocation(program, "mView"),false, flatten(lookAt(camera.eye, camera.at, camera.up)));
+        gl.uniformMatrix4fv(gl.getUniformLocation(illuminationProgram, "mModelView"), false, flatten(STACK.modelView()));
+        gl.uniformMatrix4fv(gl.getUniformLocation(illuminationProgram, "mProjection"), false, flatten(mProjection));
+        gl.uniformMatrix4fv(gl.getUniformLocation(illuminationProgram, "mNormals"), false, flatten(normalMatrix(STACK.modelView())));
+        gl.uniformMatrix4fv(gl.getUniformLocation(illuminationProgram, "mView"), false, flatten(lookAt(camera.eye, camera.at, camera.up)));
 
-        gl.uniform1i(gl.getUniformLocation(program, "uUseNormals"), options.normals);
-        gl.uniform3fv(gl.getUniformLocation(program, "uAmbient"),vec3((light.ambient[0])/255,(light.ambient[1])/255,(light.ambient[2])/255));
-        gl.uniform3fv(gl.getUniformLocation(program, "lightDif"),vec3((light.diffuse[0])/255,(light.diffuse[1]/255),(light.diffuse[2])/255));
-        gl.uniform3fv(gl.getUniformLocation(program, "lightSpe"),vec3((light.specular[0]/255),(light.specular[1]/255),(light.specular[2])/255));
+        gl.uniform1i(gl.getUniformLocation(illuminationProgram, "uNumLights"), lights.length);
 
-        gl.uniform3fv(gl.getUniformLocation(program, "materialAmb"),vec3((material.ambience[0])/255,(material.ambience[1])/255,(material.ambience[2])/255));
-        gl.uniform3fv(gl.getUniformLocation(program, "materialDif"),vec3((material.diffuse[0])/255,(material.diffuse[1]/255),(material.diffuse[2])/255));
-        gl.uniform3fv(gl.getUniformLocation(program, "materialSpe"),vec3((material.specular[0]/255),(material.specular[1]/255),(material.specular[2])/255));
-        gl.uniform1f(gl.getUniformLocation(program,"shininess"),material.shininess);
+        for (let i = 0; i < lights.length; i++) { 
+			gl.uniform3fv(gl.getUniformLocation(illuminationProgram, "u_lightWorldPosition"), lights[i].position);
 
-          //////////////////
-        pushMatrix();   
-        multTranslation([0,-.7,0]);
-        multScale([3,0.1,3]);
-        uploadModelView();
-        //gl.uniform3fv(color, vec3(0.1, 0.1, 0.1));
-        CUBE.draw(gl, program, gl.TRIANGLES);
-        popMatrix();
-          /////////////////
-        
-          //OBJECTO ELEMENTAR  - NESTE CASO UMA ESFERA
-        pushMatrix();
-        uploadModelView();
-        //gl.uniform3fv(color, vec3(0.5, 0.5, 0.5));
-        switch(material.objectDrawn){
-            case "Sphere":
-                SPHERE.draw(gl, program, gl.TRIANGLES);
-                break;
-            case "Cube":
-                CUBE.draw(gl, program, gl.TRIANGLES);
-                break;
-            case "Torus":
-                TORUS.draw(gl, program, gl.TRIANGLES);
-                break;
-            case "Cylinder":
-                CYLINDER.draw(gl, program, gl.TRIANGLES);
-                break;
-            case "Pyramid":
-                PYRAMID.draw(gl, program, gl.TRIANGLES);
-                break;
-            default:
-                break;
+            gl.uniform3fv(gl.getUniformLocation(illuminationProgram, "uLight[" + i + "].pos"), lights[i].position);
+            gl.uniform3fv(gl.getUniformLocation(illuminationProgram, "uLight[" + i + "].Ia"), rgb255to1(lights[i].ambient));
+            gl.uniform3fv(gl.getUniformLocation(illuminationProgram, "uLight[" + i + "].Id"), rgb255to1(lights[i].diffuse));
+            gl.uniform3fv(gl.getUniformLocation(illuminationProgram, "uLight[" + i + "].Is"), rgb255to1(lights[i].specular));
+            gl.uniform1f(gl.getUniformLocation(illuminationProgram, "uLight[" + i + "].isDirectional"), lights[i].directional);
+            gl.uniform1f(gl.getUniformLocation(illuminationProgram, "uLight[" + i + "].isActive"), lights[i].active);
         }
+
+        gl.uniform3fv(gl.getUniformLocation(illuminationProgram, "uMaterial.Ka"), rgb255to1(material.ambient));
+        gl.uniform3fv(gl.getUniformLocation(illuminationProgram, "uMaterial.Kd"), rgb255to1(material.diffuse));
+        gl.uniform3fv(gl.getUniformLocation(illuminationProgram, "uMaterial.Ks"), rgb255to1(material.specular));
+        gl.uniform1f(gl.getUniformLocation(illuminationProgram,"uMaterial.shininess"), material.shininess);
+
+        pushMatrix();   
+            multTranslation([0,-.7,0]);
+            multScale([3,0.1,3]);
+            uploadModelView(illuminationProgram);
+            CUBE.draw(gl, illuminationProgram, gl.TRIANGLES);
+        popMatrix();
+        pushMatrix();
+        	uploadModelView(illuminationProgram);
+
+            switch (material.objectDrawn) {
+                case "Sphere":
+                    SPHERE.draw(gl, illuminationProgram, gl.TRIANGLES);
+                    break;
+                case "Cube":
+                    CUBE.draw(gl, illuminationProgram, gl.TRIANGLES);
+                    break;
+                case "Torus":
+                    TORUS.draw(gl, illuminationProgram, gl.TRIANGLES);
+                    break;
+                case "Cylinder":
+                    CYLINDER.draw(gl, illuminationProgram, gl.TRIANGLES);
+                    break;
+            	case "Pyramid":
+            	    PYRAMID.draw(gl, illuminationProgram, gl.TRIANGLES);
+            	    break;
+            	default:
+            	    console.log("Somehow an invalid shape was selected.")
+            	    break;
+        	}
         popMatrix();
 
-        //LUZ - NAO SEI COMO LIGAR ISTO A OPCAO SHOW LIGHTS DENTRO DO INTERFACE
-        pushMatrix();
-        multTranslation(light.position);
-        multScale([0.1,0.1,0.1]);
-        uploadModelView();
-        //gl.uniform3fv(color, vec3(1.0, 1.0, 1.0));
-        SPHERE.draw(gl, program, gl.LINES);
-        popMatrix();
-        gl.uniform3fv(lightWorldPositionLocation, vec3(light.position));
-        //gl.uniform3fv(color, vec3(1.0, 1.0, 1.0));
-        
-        
+		gl.useProgram(lightProgram);
+
+		for (let i = 0; i < lights.length; i++) {
+			gl.uniform3fv(gl.getUniformLocation(lightProgram, "u_lightWorldPosition"), lights[i].position);
+			gl.uniform3fv(gl.getUniformLocation(lightProgram, "uColor"), lights[i].specular);
+
+	        pushMatrix();
+    	    	multTranslation(lights[i].position);
+            	multScale(vec3(0.1, 0.1, 0.1));
+            	uploadModelView(lightProgram);
+        		SPHERE.draw(gl, lightProgram, gl.TRIANGLES);
+        	popMatrix();
+		}
     }
 }
 
-const urls = ['shader.vert', 'shader.frag'];
-
-loadShadersFromURLS(urls).then( shaders => setup(shaders));
+function rgb255to1(rgb) {
+    return vec3(rgb[0]/255, rgb[1]/255, rgb[2]/255);
+}

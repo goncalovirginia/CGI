@@ -10,6 +10,28 @@ import * as TORUS from '../../libs/torus.js';
 
 import * as STACK from '../../libs/stack.js';
 
+class Shape {
+
+    constructor(type) {
+        this.type = type;
+        this.position = vec3(0, 0, 0);
+        this.ka = vec3(255, 255, 255);
+        this.kd = vec3(255, 255, 255);
+        this.ks = vec3(255, 255, 255);
+        this.shininess = 50.0;
+    }
+
+}
+
+class Light {
+
+    constructor() {
+        this.position = vec(0, 0, 0);
+        
+    }
+
+}
+
 function setup(shaders) {
     const canvas = document.getElementById('gl-canvas');
     const gl = setupWebGL(canvas);
@@ -46,67 +68,75 @@ function setup(shaders) {
         active: true
     }
 
+    let shapes = new Map();
+    let selectedShape = "cube1";
 
-    const gui = new dat.GUI();
+    const controlsGUI = new dat.GUI();
+    
+    const optionsFolder = controlsGUI.addFolder("options");
 
-    const optionsGui = gui.addFolder("options");
-
-    optionsGui.add(options, "backfaceculling").name("backface culling").onChange(()=> {
+    optionsFolder.add(options, "backfaceculling").name("backface culling").onChange(()=> {
         options.backfaceculling ? gl.enable(gl.CULL_FACE) : gl.disable(gl.CULL_FACE);
     });
 
-    optionsGui.add(options, "depthtest").name("depth test").onChange(()=> {
+    optionsFolder.add(options, "depthtest").name("depth test").onChange(()=> {
         options.depthtest? gl.enable(gl.DEPTH_TEST) : gl.disable(gl.DEPTH_TEST);
     });
 
-    optionsGui.add(options, "showlights").name("show lights");
+    optionsFolder.add(options, "showlights").name("show lights");
 
-    const cameraGui = gui.addFolder("camera");
+    const cameraFolder = controlsGUI.addFolder("camera");
 
-    cameraGui.add(camera, "fovy").min(1).max(100).step(1).listen();
+    cameraFolder.add(camera, "fovy").min(1).max(100).step(1).listen();
     //cameraGui.add(camera, "aspect").min(0).max(10).listen().domElement.style.pointerEvents = "none";
     
-    cameraGui.add(camera, "near").min(0.1).max(20).onChange( function(v) {
+    cameraFolder.add(camera, "near").min(0.1).max(20).onChange( function(v) {
         camera.near = Math.min(camera.far-0.5, v);
     });
 
-    cameraGui.add(camera, "far").min(0.1).max(20).listen().onChange( function(v) {
+    cameraFolder.add(camera, "far").min(0.1).max(20).listen().onChange( function(v) {
         camera.far = Math.max(camera.near+0.5, v);
     });
 
-    const eye = cameraGui.addFolder("eye");
+    const eyeFolder = cameraFolder.addFolder("eye");
 
-    eye.add(camera.eye, 0).step(0.05).name("x");//.domElement.style.pointerEvents = "none";;
-    eye.add(camera.eye, 1).step(0.05).name("y");//.domElement.style.pointerEvents = "none";;
-    eye.add(camera.eye, 2).step(0.05).name("z");//.domElement.style.pointerEvents = "none";;
+    eyeFolder.add(camera.eye, 0).step(0.05).name("x");//.domElement.style.pointerEvents = "none";;
+    eyeFolder.add(camera.eye, 1).step(0.05).name("y");//.domElement.style.pointerEvents = "none";;
+    eyeFolder.add(camera.eye, 2).step(0.05).name("z");//.domElement.style.pointerEvents = "none";;
 
-    const at = cameraGui.addFolder("at");
+    const atFolder = cameraFolder.addFolder("at");
 
-    at.add(camera.at, 0).step(0.05).name("x");//.domElement.style.pointerEvents = "none";;
-    at.add(camera.at, 1).step(0.05).name("y");//.domElement.style.pointerEvents = "none";;
-    at.add(camera.at, 2).step(0.05).name("z");//.domElement.style.pointerEvents = "none";;
+    atFolder.add(camera.at, 0).step(0.05).name("x");//.domElement.style.pointerEvents = "none";;
+    atFolder.add(camera.at, 1).step(0.05).name("y");//.domElement.style.pointerEvents = "none";;
+    atFolder.add(camera.at, 2).step(0.05).name("z");//.domElement.style.pointerEvents = "none";;
 
-    const up = cameraGui.addFolder("up");
+    const upFolder = cameraFolder.addFolder("up");
 
-    up.add(camera.up, 0).step(0.05).name("x");//.domElement.style.pointerEvents = "none";;
-    up.add(camera.up, 1).step(0.05).name("y");//.domElement.style.pointerEvents = "none";;
-    up.add(camera.up, 2).step(0.05).name("z");//.domElement.style.pointerEvents = "none";;
+    upFolder.add(camera.up, 0).step(0.05).name("x");//.domElement.style.pointerEvents = "none";;
+    upFolder.add(camera.up, 1).step(0.05).name("y");//.domElement.style.pointerEvents = "none";;
+    upFolder.add(camera.up, 2).step(0.05).name("z");//.domElement.style.pointerEvents = "none";;
 
-    const lightGui = gui.addFolder("light");
+    const lightFolder = controlsGUI.addFolder("light");
 
-    const position = lightGui.addFolder("position");
-    position.add(light.position, 0).step(0.05).name("x");
-    position.add(light.position, 1).step(0.05).name("y");
-    position.add(light.position, 2).step(0.05).name("z");
+    const positionFolder = lightFolder.addFolder("position");
 
-    lightGui.add(light, "ambient").min(0.1).max(75);
-    lightGui.add(light,"diffuse").min(0.1).max(175);
-    lightGui.add(light,"specular").min(0.1).max(255);
+    positionFolder.add(light.position, 0).step(0.05).name("x");
+    positionFolder.add(light.position, 1).step(0.05).name("y");
+    positionFolder.add(light.position, 2).step(0.05).name("z");
 
-    lightGui.add(light, "directional");
-    lightGui.add(light, "active");
+    lightFolder.add(light, "ambient").min(0.1).max(75);
+    lightFolder.add(light,"diffuse").min(0.1).max(175);
+    lightFolder.add(light,"specular").min(0.1).max(255);
 
-    
+    lightFolder.add(light, "directional");
+    lightFolder.add(light, "active");
+
+    const objectsGUI = new dat.GUI();
+
+    const materialFolder = objectsGUI.addFolder("material");
+
+   // materialFolder.add(selectedObjectIndex, "object");
+
 
     // matrices
     let mView, mProjection;
@@ -119,8 +149,6 @@ function setup(shaders) {
     window.addEventListener('resize', resizeCanvasToFullWindow);
 
     window.addEventListener('wheel', function(event) {
-
-        
         const factor = 1 - event.deltaY/1000;
         camera.fovy = Math.max(1, Math.min(100, camera.fovy * factor)); 
     });
@@ -166,14 +194,6 @@ function setup(shaders) {
         //SPHERE.draw(gl, program, options.wireframe ? gl.LINES : gl.TRIANGLES);
        // CUBE.draw(gl, program, gl.LINES);
 
-       //LUZ - NAO SEI COMO LIGAR ISTO A OPCAO SHOW LIGHTS DENTRO DO INTERFACE
-       pushMatrix();
-       multTranslation(light.position);
-       multScale([0.1,0.1,-0.1]);
-       uploadModelView();
-       SPHERE.draw(gl, program, gl.TRIANGLES);
-       popMatrix();
-
         //DESENHAR UM CUBO DEFORMADO NUM PARALELEPIPEDO COM AS DIMENSOES DE 3 X 0.1 X 3 TRANSFORMADO DE FORMA A QUE A FACE SUPERIOR FIQUE EM Y=-0.5
           //////////////////
         pushMatrix();   
@@ -188,6 +208,14 @@ function setup(shaders) {
         pushMatrix();
         uploadModelView();
         CUBE.draw(gl, program, gl.TRIANGLES);
+        popMatrix();
+
+        //LUZ - NAO SEI COMO LIGAR ISTO A OPCAO SHOW LIGHTS DENTRO DO INTERFACE
+        pushMatrix();
+        multTranslation(light.position);
+        multScale([0.1,0.1,-0.1]);
+        uploadModelView();
+        SPHERE.draw(gl, program, gl.TRIANGLES);
         popMatrix();
     }
 }
