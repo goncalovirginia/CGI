@@ -6,46 +6,53 @@ import * as dat from '../../libs/dat.gui.module.js';
 
 import * as CUBE from '../../libs/cube.js';
 import * as SPHERE from '../../libs/sphere.js';
+import * as CYLINDER from '../../libs/cylinder.js';
 import * as TORUS from '../../libs/torus.js';
+import * as PYRAMID from '../../libs/pyramid.js';
 
 import * as STACK from '../../libs/stack.js';
-
-class Shape {
-
-    constructor(type) {
-        this.type = type;
-        this.position = vec3(0, 0, 0);
-        this.ka = vec3(255, 255, 255);
-        this.kd = vec3(255, 255, 255);
-        this.ks = vec3(255, 255, 255);
-        this.shininess = 50.0;
-    }
-
-}
 
 class Light {
 
     constructor() {
-        this.position = vec(0, 0, 0);
-        
+        this.position = vec3(1, 1, -1);
+        this.ambient = vec3(0, 0, 0);
+        this.diffuse = vec3(100, 0, 0);
+        this.specular = vec3(255, 0, 0);
+        this.directional = false;
+        this.active = true;
     }
 
 }
+
+const urls = ['shader.vert', 'shader.frag', 'shader2.frag'];
+
+loadShadersFromURLS(urls).then( shaders => setup(shaders));
 
 function setup(shaders) {
     const canvas = document.getElementById('gl-canvas');
     const gl = setupWebGL(canvas);
 
+    const MAX_LIGHTS = 8;
+
+	let selectedLight = {
+		number: 0
+	}
+
     CUBE.init(gl);
     SPHERE.init(gl);
+    TORUS.init(gl);
+    PYRAMID.init(gl);
+    CYLINDER.init(gl);
 
-    const program = buildProgramFromSources(gl, shaders['shader.vert'], shaders['shader.frag']);
-
-    // Camera  
+    const illuminationProgram = buildProgramFromSources(gl, shaders['shader.vert'], shaders['shader.frag']);
+	const lightProgram = buildProgramFromSources(gl, shaders['shader.vert'], shaders['shader2.frag']);
+    
+	// Camera  
     let camera = {
-        eye: vec3(0,0,5),
-        at: vec3(0,0,0),
-        up: vec3(0,1,0),
+        eye: vec3(0, 3, 4),
+        at: vec3(0, 0, 0),
+        up: vec3(0, 1, 0),
         fovy: 45,
         aspect: 1, // Updated further down
         near: 0.1,
@@ -59,90 +66,190 @@ function setup(shaders) {
         normals: true
     }
 
-    let light = {
-        position : vec3(0,0,0),
-        ambient: 75,
-        diffuse: 175,
-        specular:225,
-        directional: false,
-        active: true
+    let lights = [];
+
+    lights.push(new Light());
+
+    lights.push(new Light());
+    lights[1].position = vec3(-1, 1, 0);
+    lights[1].diffuse = vec3(0, 0, 100);
+    lights[1].specular = vec3(0, 0, 255);
+
+    let material = {
+        ambient: vec3(255, 255, 255),
+        diffuse: vec3(255, 255, 255),
+        specular: vec3(255, 255, 255),
+        objectDrawn: "Torus",
+        shininess: 20.0
     }
 
-    let shapes = new Map();
-    let selectedShape = "cube1";
+    const gui = new dat.GUI();
 
-    const controlsGUI = new dat.GUI();
-    
-    const optionsFolder = controlsGUI.addFolder("options");
+    const optionsGui = gui.addFolder("options");
 
-    optionsFolder.add(options, "backfaceculling").name("backface culling").onChange(()=> {
-        options.backfaceculling ? gl.enable(gl.CULL_FACE) : gl.disable(gl.CULL_FACE);
+    optionsGui.add(options, "backfaceculling").name("backface culling").onChange((val)=> {
+        options.backfaceculling =val;
     });
 
-    optionsFolder.add(options, "depthtest").name("depth test").onChange(()=> {
-        options.depthtest? gl.enable(gl.DEPTH_TEST) : gl.disable(gl.DEPTH_TEST);
+    optionsGui.add(options, "depthtest").name("depth test").onChange((val)=> {
+        options.depthtest = val;
     });
 
-    optionsFolder.add(options, "showlights").name("show lights");
+    optionsGui.add(options, "showlights").name("show lights").onChange((val) => {
+        options.showlights = val;
+    });
 
-    const cameraFolder = controlsGUI.addFolder("camera");
+    const cameraGui = gui.addFolder("camera");
 
-    cameraFolder.add(camera, "fovy").min(1).max(100).step(1).listen();
-    //cameraGui.add(camera, "aspect").min(0).max(10).listen().domElement.style.pointerEvents = "none";
+    cameraGui.add(camera, "fovy").min(1).max(100).step(1).listen();
     
-    cameraFolder.add(camera, "near").min(0.1).max(20).onChange( function(v) {
+    cameraGui.add(camera, "near").min(0.1).max(20).onChange( function(v) {
         camera.near = Math.min(camera.far-0.5, v);
     });
 
-    cameraFolder.add(camera, "far").min(0.1).max(20).listen().onChange( function(v) {
+    cameraGui.add(camera, "far").min(0.1).max(20).listen().onChange( function(v) {
         camera.far = Math.max(camera.near+0.5, v);
     });
 
-    const eyeFolder = cameraFolder.addFolder("eye");
+    const eye = cameraGui.addFolder("eye");
 
-    eyeFolder.add(camera.eye, 0).step(0.05).name("x");//.domElement.style.pointerEvents = "none";;
-    eyeFolder.add(camera.eye, 1).step(0.05).name("y");//.domElement.style.pointerEvents = "none";;
-    eyeFolder.add(camera.eye, 2).step(0.05).name("z");//.domElement.style.pointerEvents = "none";;
+    eye.add(camera.eye, 0).step(0.05).name("x");
+    eye.add(camera.eye, 1).step(0.05).name("y");
+    eye.add(camera.eye, 2).step(0.05).name("z");
 
-    const atFolder = cameraFolder.addFolder("at");
+    const at = cameraGui.addFolder("at");
 
-    atFolder.add(camera.at, 0).step(0.05).name("x");//.domElement.style.pointerEvents = "none";;
-    atFolder.add(camera.at, 1).step(0.05).name("y");//.domElement.style.pointerEvents = "none";;
-    atFolder.add(camera.at, 2).step(0.05).name("z");//.domElement.style.pointerEvents = "none";;
+    at.add(camera.at, 0).step(0.05).name("x");
+    at.add(camera.at, 1).step(0.05).name("y");
+    at.add(camera.at, 2).step(0.05).name("z");
 
-    const upFolder = cameraFolder.addFolder("up");
+    const up = cameraGui.addFolder("up");
 
-    upFolder.add(camera.up, 0).step(0.05).name("x");//.domElement.style.pointerEvents = "none";;
-    upFolder.add(camera.up, 1).step(0.05).name("y");//.domElement.style.pointerEvents = "none";;
-    upFolder.add(camera.up, 2).step(0.05).name("z");//.domElement.style.pointerEvents = "none";;
+    up.add(camera.up, 0).step(0.05).name("x");
+    up.add(camera.up, 1).step(0.05).name("y");
+    up.add(camera.up, 2).step(0.05).name("z");
 
-    const lightFolder = controlsGUI.addFolder("light");
+    const lightGui = gui.addFolder("light");
 
-    const positionFolder = lightFolder.addFolder("position");
+	let lightNumbers = [0, 1];
 
-    positionFolder.add(light.position, 0).step(0.05).name("x");
-    positionFolder.add(light.position, 1).step(0.05).name("y");
-    positionFolder.add(light.position, 2).step(0.05).name("z");
+	let addLight = { 
+		add: function() {
+			if (lights.length == MAX_LIGHTS) {
+				return;
+			}
 
-    lightFolder.add(light, "ambient").min(0.1).max(75);
-    lightFolder.add(light,"diffuse").min(0.1).max(175);
-    lightFolder.add(light,"specular").min(0.1).max(255);
+			lights.push(new Light());
+			lightNumbers.push(lightNumbers.length);
 
-    lightFolder.add(light, "directional");
-    lightFolder.add(light, "active");
+			lightNumbersGui = lightNumbersGui.options(lightNumbers).onChange(function(value) {
+                selectedLight.number = value;
 
-    const objectsGUI = new dat.GUI();
+                x = x.setValue(lights[selectedLight.number].position[0]).step(0.05).name("x").onChange((val) => {
+                    lights[selectedLight.number].position[0] = val;
+                });
+            
+                y = y.setValue(lights[selectedLight.number].position[1]).step(0.05).name("y").onChange((val) => {
+                    lights[selectedLight.number].position[1] = val;
+                });
+            
+                z = z.setValue(lights[selectedLight.number].position[2]).step(0.05).name("z").onChange((val) => {
+                    lights[selectedLight.number].position[2] = val;
+                });
+                
+                ambient = ambient.setValue(lights[selectedLight.number].ambient).onChange((val) => {
+                    lights[selectedLight.number].ambient = val;
+                });
+            
+                diffuse = diffuse.setValue(lights[selectedLight.number].diffuse).onChange((val) => {
+                    lights[selectedLight.number].diffuse= val;
+                });
+            
+                specular = specular.setValue(lights[selectedLight.number].specular).onChange((val) => {
+                    lights[selectedLight.number].specular = val;
+                });
+            
+                directional = directional.setValue(lights[selectedLight.number].directional).onChange((val) => {
+                    lights[selectedLight.number].directional = val;
+                });
+            
+                active = active.setValue(lights[selectedLight.number].active).onChange((val) => {
+                    lights[selectedLight.number].active = val;
+                });
+            });
+		}
+	};
 
-    const materialFolder = objectsGUI.addFolder("material");
+	lightGui.add(addLight, "add");
 
-   // materialFolder.add(selectedObjectIndex, "object");
+	let lightNumbersGui = lightGui.add(selectedLight, "number", lightNumbers).onChange(function(value) {
+        selectedLight.number = value;
+    });
 
+    const position = lightGui.addFolder("position");
+
+    let x = position.add(lights[selectedLight.number].position, 0).step(0.05).name("x").onChange((val) => {
+        lights[selectedLight.number].position[0] = val;
+    });
+
+    let y = position.add(lights[selectedLight.number].position, 1).step(0.05).name("y").onChange((val) => {
+        lights[selectedLight.number].position[1] = val;
+    });
+
+    let z = position.add(lights[selectedLight.number].position, 2).step(0.05).name("z").onChange((val) => {
+        lights[selectedLight.number].position[2] = val;
+    });
+    
+    let ambient = lightGui.addColor(lights[selectedLight.number], "ambient").onChange((val) => {
+        lights[selectedLight.number].ambient = val;
+    });
+
+    let diffuse = lightGui.addColor(lights[selectedLight.number], "diffuse").onChange((val) => {
+        lights[selectedLight.number].diffuse= val;
+    });
+
+    let specular = lightGui.addColor(lights[selectedLight.number], "specular").onChange((val) => {
+        lights[selectedLight.number].specular = val;
+    });
+
+    let directional = lightGui.add(lights[selectedLight.number], "directional").onChange((val) => {
+        lights[selectedLight.number].directional = val;
+    });
+
+    let active = lightGui.add(lights[selectedLight.number], "active").onChange((val) => {
+        lights[selectedLight.number].active = val;
+    });
+
+    const gui2 = new dat.GUI();
+
+    const materialGui = gui2.addFolder("material");
+
+    materialGui.add(material, "objectDrawn", ["Cube", "Sphere", "Cylinder", "Torus", "Pyramid"]).onChange(function(value){
+        material.objectDrawn = value;
+    });
+
+    materialGui.addColor(material, "ambient").onChange((val)=>{
+        material.ambient=val;
+    });
+    
+    materialGui.addColor(material, "diffuse").onChange((val)=>{
+        material.diffuse = val;
+    });
+
+    materialGui.addColor(material, "specular").onChange((val)=>{
+        material.specular=val;
+    });
+
+    materialGui.add(material, "shininess").min(0.1).max(30.0).onChange((val)=>{
+        material.shininess=val;
+    });
 
     // matrices
     let mView, mProjection;
 
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     //options.depthtest?gl.enable(gl.DEPTH_TEST): gl.disable(gl.DEPTH_TEST);
+    gl.enable(gl.CULL_FACE);
 
     resizeCanvasToFullWindow();
 
@@ -153,73 +260,100 @@ function setup(shaders) {
         camera.fovy = Math.max(1, Math.min(100, camera.fovy * factor)); 
     });
 
-
     window.requestAnimationFrame(render);
 
-    function resizeCanvasToFullWindow()
-    {
+    function resizeCanvasToFullWindow() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-
         camera.aspect = canvas.width / canvas.height;
-
         gl.viewport(0,0,canvas.width, canvas.height);
     }
 
-    function uploadModelView()
-    {
+    function uploadModelView(program) {
         gl.uniformMatrix4fv(gl.getUniformLocation(program, "mModelView"), false, flatten(modelView()));
     }
 
-    function render(time)
-    {
+    function render(time) {
         window.requestAnimationFrame(render);
 
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        gl.useProgram(program);
+        gl.useProgram(illuminationProgram);
 
         mView = lookAt(camera.eye, camera.at, camera.up);
         STACK.loadMatrix(mView);
 
         mProjection = perspective(camera.fovy, camera.aspect, camera.near, camera.far);
 
+        gl.uniformMatrix4fv(gl.getUniformLocation(illuminationProgram, "mModelView"), false, flatten(STACK.modelView()));
+        gl.uniformMatrix4fv(gl.getUniformLocation(illuminationProgram, "mProjection"), false, flatten(mProjection));
+        gl.uniformMatrix4fv(gl.getUniformLocation(illuminationProgram, "mNormals"), false, flatten(normalMatrix(STACK.modelView())));
+        gl.uniformMatrix4fv(gl.getUniformLocation(illuminationProgram, "mView"), false, flatten(lookAt(camera.eye, camera.at, camera.up)));
 
-        gl.uniformMatrix4fv(gl.getUniformLocation(program, "mModelView"), false, flatten(STACK.modelView()));
-        gl.uniformMatrix4fv(gl.getUniformLocation(program, "mProjection"), false, flatten(mProjection));
-        gl.uniformMatrix4fv(gl.getUniformLocation(program, "mNormals"), false, flatten(normalMatrix(STACK.modelView())));
+        gl.uniform1i(gl.getUniformLocation(illuminationProgram, "uNumLights"), lights.length);
 
-        gl.uniform1i(gl.getUniformLocation(program, "uUseNormals"), options.normals);
+        for (let i = 0; i < lights.length; i++) { 
+			gl.uniform3fv(gl.getUniformLocation(illuminationProgram, "u_lightWorldPosition"), lights[i].position);
 
-        //SPHERE.draw(gl, program, options.wireframe ? gl.LINES : gl.TRIANGLES);
-       // CUBE.draw(gl, program, gl.LINES);
+            gl.uniform3fv(gl.getUniformLocation(illuminationProgram, "uLight[" + i + "].pos"), lights[i].position);
+            gl.uniform3fv(gl.getUniformLocation(illuminationProgram, "uLight[" + i + "].Ia"), rgb255to1(lights[i].ambient));
+            gl.uniform3fv(gl.getUniformLocation(illuminationProgram, "uLight[" + i + "].Id"), rgb255to1(lights[i].diffuse));
+            gl.uniform3fv(gl.getUniformLocation(illuminationProgram, "uLight[" + i + "].Is"), rgb255to1(lights[i].specular));
+            gl.uniform1f(gl.getUniformLocation(illuminationProgram, "uLight[" + i + "].isDirectional"), lights[i].directional);
+            gl.uniform1f(gl.getUniformLocation(illuminationProgram, "uLight[" + i + "].isActive"), lights[i].active);
+        }
 
-        //DESENHAR UM CUBO DEFORMADO NUM PARALELEPIPEDO COM AS DIMENSOES DE 3 X 0.1 X 3 TRANSFORMADO DE FORMA A QUE A FACE SUPERIOR FIQUE EM Y=-0.5
-          //////////////////
+        gl.uniform3fv(gl.getUniformLocation(illuminationProgram, "uMaterial.Ka"), rgb255to1(material.ambient));
+        gl.uniform3fv(gl.getUniformLocation(illuminationProgram, "uMaterial.Kd"), rgb255to1(material.diffuse));
+        gl.uniform3fv(gl.getUniformLocation(illuminationProgram, "uMaterial.Ks"), rgb255to1(material.specular));
+        gl.uniform1f(gl.getUniformLocation(illuminationProgram,"uMaterial.shininess"), material.shininess);
+
         pushMatrix();   
-        multTranslation([0,-.7,0]);
-        multScale([3,0.1,3]);
-        uploadModelView();
-        CUBE.draw(gl, program, gl.TRIANGLES);
+            multTranslation([0,-.7,0]);
+            multScale([3,0.1,3]);
+            uploadModelView(illuminationProgram);
+            CUBE.draw(gl, illuminationProgram, gl.TRIANGLES);
         popMatrix();
-          /////////////////
-        
-          //OBJECTO ELEMENTAR  - NESTE CASO UMA ESFERA
         pushMatrix();
-        uploadModelView();
-        CUBE.draw(gl, program, gl.TRIANGLES);
+        	uploadModelView(illuminationProgram);
+
+            switch (material.objectDrawn) {
+                case "Sphere":
+                    SPHERE.draw(gl, illuminationProgram, gl.TRIANGLES);
+                    break;
+                case "Cube":
+                    CUBE.draw(gl, illuminationProgram, gl.TRIANGLES);
+                    break;
+                case "Torus":
+                    TORUS.draw(gl, illuminationProgram, gl.TRIANGLES);
+                    break;
+                case "Cylinder":
+                    CYLINDER.draw(gl, illuminationProgram, gl.TRIANGLES);
+                    break;
+            	case "Pyramid":
+            	    PYRAMID.draw(gl, illuminationProgram, gl.TRIANGLES);
+            	    break;
+            	default:
+            	    console.log("Somehow an invalid shape was selected.")
+            	    break;
+        	}
         popMatrix();
 
-        //LUZ - NAO SEI COMO LIGAR ISTO A OPCAO SHOW LIGHTS DENTRO DO INTERFACE
-        pushMatrix();
-        multTranslation(light.position);
-        multScale([0.1,0.1,-0.1]);
-        uploadModelView();
-        SPHERE.draw(gl, program, gl.TRIANGLES);
-        popMatrix();
+		gl.useProgram(lightProgram);
+
+		for (let i = 0; i < lights.length; i++) {
+			gl.uniform3fv(gl.getUniformLocation(lightProgram, "uColor"), lights[i].specular);
+
+	        pushMatrix();
+    	    	multTranslation(lights[i].position);
+            	multScale(vec3(0.1, 0.1, 0.1));
+            	uploadModelView(lightProgram);
+        		SPHERE.draw(gl, lightProgram, gl.LINES);
+        	popMatrix();
+		}
     }
 }
 
-const urls = ['shader.vert', 'shader.frag'];
-
-loadShadersFromURLS(urls).then( shaders => setup(shaders));
+function rgb255to1(rgb) {
+    return vec3(rgb[0]/255, rgb[1]/255, rgb[2]/255);
+}
